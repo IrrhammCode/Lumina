@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Lumina">
+  <rect width="512" height="512" rx="112" fill="#E8EBE6"/>
+  <path d="M256 96L394 182V330L256 416L118 330V182L256 96Z" stroke="#0E0F0C" stroke-width="20" fill="none"/>
+  <path d="M256 182L330 224V288L256 330L182 288V224L256 182Z" fill="#F0B429"/>
+</svg>

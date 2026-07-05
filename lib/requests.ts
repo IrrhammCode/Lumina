@@ -1,0 +1,206 @@
+import { getMemberById } from "./family";
+import { addPayment, NEED_META, type NeedType } from "./allowances";
+import { emitNewRequest } from "./events";
+
+export type RequestStatus = "pending" | "declined" | "paid";
+
+export type RequestSource = "family" | "caregiver";
+
+export type CareRequest = {
+  id: string;
+  memberId: string;
+  needType: NeedType;
+  title: string;
+  message: string;
+  amount: number;
+  dueLabel: string;
+  billNote: string;
+  status: RequestStatus;
+  source: RequestSource;
+  createdAt: string;
+  resolvedAt?: string;
+};
+
+const REQUESTS_KEY = "lumina_requests";
+const REQUESTS_SEEDED = "lumina_requests_seeded";
+
+function addDays(base: Date, days: number): Date {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function migrateRequest(raw: Record<string, unknown>): CareRequest {
+  return {
+    ...(raw as unknown as CareRequest),
+    source: (raw.source as RequestSource) ?? "family",
+  };
+}
+
+export function getRequests(): CareRequest[] {
+  if (typeof window === "undefined") return [];
+  seedRequestsIfNeeded();
+  const raw = localStorage.getItem(REQUESTS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>[];
+    return parsed.map(migrateRequest);
+  } catch {
+    return [];
+  }
+}
+
+export function saveRequests(requests: CareRequest[]): void {
+  localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+}
+
+export function getRequestById(id: string): CareRequest | undefined {
+  return getRequests().find((r) => r.id === id);
+}
+
+export function getPendingRequests(): CareRequest[] {
+  return getRequests().filter((r) => r.status === "pending");
+}
+
+export function formatDueFromDays(days: number): string {
+  const d = addDays(new Date(), days);
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+export function buildRequestTitle(needType: NeedType, relation: string, billNote?: string): string {
+  const meta = NEED_META[needType];
+  const shortBill = billNote?.split("·")[0]?.trim();
+  if (shortBill) return `${meta.label} — ${shortBill}`;
+  return `${meta.label} for ${relation}`;
+}
+
+export function defaultRequestMessage(needType: NeedType, relation: string): string {
+  const lines: Record<NeedType, string> = {
+    pulsa: `Hi, I need pulsa top-up. Can you help, ${relation === "Mom" || relation === "Dad" ? "" : ""}?`.replace(", ?", "?"),
+    electricity: "Electric bill arrived. Due soon — can you cover it?",
+    school: "School fee is coming up. Can you help with tuition?",
+    health: "Need help with a medical expense this week.",
+    rent: "Rent is due soon. Can you send support?",
+    custom: "I need help with an expense back home.",
+  };
+  return lines[needType];
+}
+
+export function createRequest(input: {
+  memberId: string;
+  needType: NeedType;
+  title: string;
+  message: string;
+  amount: number;
+  dueLabel: string;
+  billNote: string;
+  source: RequestSource;
+}): CareRequest {
+  const request: CareRequest = {
+    id: `req_${Date.now()}`,
+    ...input,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  };
+  saveRequests([request, ...getRequests()]);
+  emitNewRequest(request);
+  return request;
+}
+
+export function declineRequest(id: string): void {
+  const requests = getRequests().map((r) =>
+    r.id === id ? { ...r, status: "declined" as const, resolvedAt: new Date().toISOString() } : r
+  );
+  saveRequests(requests);
+}
+
+export function approveRequest(
+  id: string,
+  settlement?: {
+    settlementRef?: string;
+    settlementExplorerUrl?: string;
+    settlementMode?: "ua" | "demo";
+  }
+): boolean {
+  const request = getRequestById(id);
+  const member = request ? getMemberById(request.memberId) : undefined;
+  if (!request || !member || request.status !== "pending") return false;
+
+  addPayment({
+    id: `pay_${Date.now()}`,
+    requestId: request.id,
+    ruleLabel: request.title,
+    memberId: member.id,
+    memberName: member.name,
+    countryCode: member.countryCode,
+    needType: request.needType,
+    amount: request.amount,
+    type: "pull",
+    status: "completed",
+    date: new Date().toISOString(),
+    settlementRef: settlement?.settlementRef ?? `0x${Math.random().toString(16).slice(2, 10)}…arb`,
+    settlementExplorerUrl: settlement?.settlementExplorerUrl,
+    settlementMode: settlement?.settlementMode ?? (settlement?.settlementExplorerUrl ? "ua" : "demo"),
+  });
+
+  const requests = getRequests().map((r) =>
+    r.id === id ? { ...r, status: "paid" as const, resolvedAt: new Date().toISOString() } : r
+  );
+  saveRequests(requests);
+  return true;
+}
+
+export function formatRequestAge(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (hours < 1) return "Just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Yesterday";
+  return `${days}d ago`;
+}
+
+function seedRequestsIfNeeded(): void {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem(REQUESTS_SEEDED)) return;
+
+  const now = new Date();
+  const friday = addDays(now, 3);
+  const dueStr = friday.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+
+  const demo: CareRequest[] = [
+    {
+      id: "req_demo_1",
+      memberId: "2",
+      needType: "school",
+      title: "School fee — Q3 tuition",
+      message: "Hi ate, school fee is due this Friday. Can you help with tuition?",
+      amount: 85,
+      dueLabel: dueStr,
+      billNote: "SMAN 3 Manila · Quarter 3 tuition",
+      status: "pending",
+      source: "family",
+      createdAt: addDays(now, -0.5).toISOString(),
+    },
+    {
+      id: "req_demo_2",
+      memberId: "1",
+      needType: "electricity",
+      title: "Meralco bill — July",
+      message: "Electric bill arrived. Due in 5 days.",
+      amount: 38,
+      dueLabel: addDays(now, 5).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+      billNote: "Meralco · Account ***4821",
+      status: "pending",
+      source: "family",
+      createdAt: addDays(now, -1).toISOString(),
+    },
+  ];
+
+  saveRequests(demo);
+  localStorage.setItem(REQUESTS_SEEDED, "1");
+}
+
+export function getRequestMeta(needType: NeedType) {
+  return NEED_META[needType];
+}

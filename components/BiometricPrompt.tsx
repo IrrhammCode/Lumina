@@ -1,8 +1,15 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Fingerprint, X } from "lucide-react";
+import { Fingerprint, X, Check } from "lucide-react";
 import { useState, useEffect } from "react";
+import { sheetBackdrop, sheetPanel, springSnappy, tweenBase } from "@/lib/motion";
+import { bio } from "@/lib/copy";
+import { getPrefs } from "@/lib/prefs";
+import { hasParticleConfig } from "@/lib/particle-config";
+import { useLuminaUA } from "@/app/providers/UniversalAccountProvider";
+
+type BiometricContext = "approve" | "activate" | "pay" | "default";
 
 interface BiometricPromptProps {
   isOpen: boolean;
@@ -10,7 +17,15 @@ interface BiometricPromptProps {
   onCancel: () => void;
   amount?: string;
   recipient?: string;
+  context?: BiometricContext;
 }
+
+const CONTEXT_COPY = {
+  approve: bio.approve,
+  activate: bio.activate,
+  pay: bio.pay,
+  default: bio.default,
+};
 
 export default function BiometricPrompt({
   isOpen,
@@ -18,159 +33,117 @@ export default function BiometricPrompt({
   onCancel,
   amount,
   recipient,
+  context = "default",
 }: BiometricPromptProps) {
+  const copy = CONTEXT_COPY[context];
+  const { isUaMode } = useLuminaUA();
   const [scanning, setScanning] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const biometricEnabled = isOpen ? getPrefs().biometricEnabled : true;
+  const settlementHint = hasParticleConfig()
+    ? isUaMode
+      ? bio.uaHint
+      : bio.demoHint
+    : undefined;
+
   useEffect(() => {
-    if (isOpen) {
-      setScanning(false);
-      setSuccess(false);
+    if (!isOpen) return;
+    if (!getPrefs().biometricEnabled) {
+      onConfirm();
+      return;
     }
+    setScanning(false);
+    setSuccess(false);
   }, [isOpen]);
 
   const handleScan = () => {
     setScanning(true);
-    // Simulate biometric scan
     setTimeout(() => {
       setScanning(false);
       setSuccess(true);
-      setTimeout(() => {
-        onConfirm();
-      }, 800);
-    }, 1500);
+      setTimeout(() => onConfirm(), 550);
+    }, 1200);
   };
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      {isOpen && biometricEnabled && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-end justify-center"
+          variants={sheetBackdrop}
+          initial="hidden"
+          animate="show"
+          exit="exit"
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-ink/40 backdrop-blur-[2px]"
+          onClick={onCancel}
         >
-          {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={onCancel}
-          />
-
-          {/* Bottom sheet */}
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg rounded-t-3xl glass p-6 pb-10"
+            variants={sheetPanel}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            className="w-full max-w-lg card rounded-b-none rounded-t-xl pb-10 relative"
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Handle bar */}
-            <div className="flex justify-center mb-4">
-              <div className="w-10 h-1 rounded-full bg-surface-500" />
+            <div className="flex justify-center mb-4 pt-2">
+              <div className="w-10 h-1 rounded-pill bg-border-soft" />
             </div>
-
-            {/* Close */}
-            <button
+            <motion.button
+              whileTap={{ scale: 0.92 }}
               onClick={onCancel}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-surface-600 transition-colors"
+              className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label="Close"
             >
-              <X size={18} className="text-text-tertiary" />
-            </button>
+              <X size={20} className="text-mute" />
+            </motion.button>
 
-            {/* Content */}
-            <div className="text-center space-y-4">
-              <h3 className="text-lg font-bold text-text-primary">
-                Confirm Transfer
-              </h3>
-
+            <div className="text-center space-y-4 px-6">
+              <h3 className="text-title text-lg">{copy.title}</h3>
               {amount && recipient && (
-                <div className="space-y-1">
-                  <p className="text-2xl font-bold text-brand-300">{amount}</p>
-                  <p className="text-sm text-text-secondary">to {recipient}</p>
+                <div>
+                  <p className="text-amount text-3xl">{amount}</p>
+                  <p className="text-caption">→ {recipient}</p>
                 </div>
               )}
 
-              {/* Biometric Button */}
-              <button
-                onClick={handleScan}
-                disabled={scanning || success}
-                className="relative mx-auto flex items-center justify-center w-20 h-20 rounded-full transition-all"
-              >
-                {/* Pulse rings */}
+              <div className="relative mx-auto w-20 h-20 flex items-center justify-center">
                 {scanning && (
                   <>
-                    <motion.div
-                      className="absolute inset-0 rounded-full border-2 border-brand-400"
-                      animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeOut",
-                      }}
-                    />
-                    <motion.div
-                      className="absolute inset-0 rounded-full border-2 border-brand-400"
-                      animate={{ scale: [1, 1.3], opacity: [0.4, 0] }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeOut",
-                        delay: 0.3,
-                      }}
-                    />
+                    <motion.span className="bio-ring bio-ring-1" animate={{ scale: [1, 1.35], opacity: [0.6, 0] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }} />
+                    <motion.span className="bio-ring bio-ring-2" animate={{ scale: [1, 1.5], opacity: [0.4, 0] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut", delay: 0.35 }} />
                   </>
                 )}
-
-                {/* Icon background */}
-                <div
-                  className={`w-full h-full rounded-full flex items-center justify-center transition-all duration-300 ${
-                    success
-                      ? "bg-accent-mint/20"
-                      : scanning
-                        ? "bg-brand-500/20"
-                        : "bg-brand-500/15 hover:bg-brand-500/25 active:scale-95"
-                  }`}
+                <motion.button
+                  onClick={handleScan}
+                  disabled={scanning || success}
+                  whileTap={{ scale: 0.94 }}
+                  animate={{
+                    scale: success ? 1.05 : scanning ? 0.96 : 1,
+                    backgroundColor: success ? "var(--color-positive)" : "var(--color-primary)",
+                  }}
+                  transition={springSnappy}
+                  className="relative z-[1] w-16 h-16 rounded-full flex items-center justify-center text-on-primary"
+                  aria-label="Confirm"
                 >
-                  {success ? (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 500 }}
-                    >
-                      <svg
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        className="text-accent-mint"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </motion.div>
-                  ) : (
-                    <Fingerprint
-                      size={32}
-                      className={`transition-colors ${
-                        scanning ? "text-brand-400" : "text-brand-300"
-                      }`}
-                    />
-                  )}
-                </div>
-              </button>
+                  <AnimatePresence mode="wait">
+                    {success ? (
+                      <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={springSnappy}>
+                        <Check size={28} strokeWidth={3} />
+                      </motion.span>
+                    ) : (
+                      <motion.span key="finger" animate={scanning ? { opacity: [1, 0.5, 1] } : { opacity: 1 }} transition={{ duration: 0.8, repeat: scanning ? Infinity : 0 }}>
+                        <Fingerprint size={28} />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </div>
 
-              <p className="text-xs text-text-tertiary">
-                {success
-                  ? "Verified! Processing transfer..."
-                  : scanning
-                    ? "Scanning..."
-                    : "Tap fingerprint to confirm"}
+              {settlementHint && !success && (
+                <p className="text-caption text-xs bio-settlement-hint">{settlementHint}</p>
+              )}
+              <p className="text-caption text-sm">
+                {success ? copy.success : scanning ? bio.scanning : bio.tap}
               </p>
             </div>
           </motion.div>

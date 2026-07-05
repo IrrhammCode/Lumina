@@ -1,32 +1,46 @@
-// @ts-expect-error - Third-party package missing correct exports for types
-import { UniversalAccount, CHAIN_ID } from "@particle-network/universal-account-sdk";
-// @ts-expect-error - Third-party package missing correct exports for types
-import type { IAssetsResponse } from "@particle-network/universal-account-sdk";
+import {
+  UniversalAccount,
+  CHAIN_ID,
+  type IAssetsResponse,
+  type ITransaction,
+  type ISmartAccountOptions,
+} from "./ua-sdk";
+import type { Connector } from "@particle-network/connector-core";
+import { getParticleCredentials } from "./particle-config";
+import { buildEIP7702Authorizations } from "./eip7702";
+import { getWalletClientFromConnector, signUaRootHash } from "./wallet-client";
 
 export type { IAssetsResponse };
 export { CHAIN_ID };
 
+const USDT_ARBITRUM = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
+
 export function createUniversalAccount(ownerAddress: string): UniversalAccount {
-  const ua = new UniversalAccount({
-    projectId: process.env.NEXT_PUBLIC_PROJECT_ID!,
-    projectClientKey: process.env.NEXT_PUBLIC_CLIENT_KEY!,
-    projectAppUuid: process.env.NEXT_PUBLIC_APP_ID!,
-    ownerAddress,
+  const creds = getParticleCredentials();
+  return new UniversalAccount({
+    projectId: creds.projectId,
+    projectClientKey: creds.projectClientKey,
+    projectAppUuid: creds.projectAppUuid,
+    smartAccountOptions: {
+      ownerAddress,
+      useEIP7702: true,
+    },
     tradeConfig: {
-      slippageBps: 100, // 1% slippage tolerance
-      universalGas: false, // Prioritize PARTI token for gas
+      slippageBps: 100,
+      universalGas: true,
     },
   });
-
-  return ua;
 }
 
 export async function getSmartAccountInfo(ua: UniversalAccount) {
   try {
-    const options = await ua.getSmartAccountOptions();
+    const options: ISmartAccountOptions = await ua.getSmartAccountOptions();
     return {
-      evmSmartAccount: options.smartAccountAddress || "",
+      ownerAddress: options.ownerAddress,
+      evmSmartAccount: options.smartAccountAddress || options.ownerAddress,
       solanaSmartAccount: options.solanaSmartAccountAddress || "",
+      useEIP7702: options.useEIP7702 ?? true,
+      eip7702Delegated: options.options?.eip7702Delegated ?? false,
     };
   } catch (error) {
     console.error("Failed to get smart account options:", error);
@@ -38,51 +52,47 @@ export async function getUnifiedBalance(
   ua: UniversalAccount
 ): Promise<IAssetsResponse | null> {
   try {
-    const assets = await ua.getPrimaryAssets();
-    return assets;
+    return await ua.getPrimaryAssets();
   } catch (error) {
     console.error("Failed to get unified balance:", error);
     return null;
   }
 }
 
-export async function createTransfer(
+/** Cross-chain USDT transfer on Arbitrum — sources liquidity from any chain via UA */
+export async function createCrossChainTransfer(
   ua: UniversalAccount,
   recipientAddress: string,
-  amountInWei: string,
-  chainId: number = CHAIN_ID.ARBITRUM_SEPOLIA_TESTNET
+  amountUsd: string
 ) {
-  try {
-    const transaction = await ua.createUniversalTransaction({
-      chainId,
-      expectTokens: [],
-      transactions: [
-        {
-          to: recipientAddress,
-          value: amountInWei,
-          data: "0x",
-        },
-      ],
-    });
-
-    return transaction;
-  } catch (error) {
-    console.error("Failed to create transfer transaction:", error);
-    throw error;
-  }
+  return ua.createTransferTransaction({
+    token: {
+      chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
+      address: USDT_ARBITRUM,
+    },
+    amount: amountUsd,
+    receiver: recipientAddress,
+  });
 }
 
-export async function sendTransfer(
+export async function signAndSendUaTransaction(
   ua: UniversalAccount,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  transaction: any,
-  signature: string
+  connector: Connector,
+  transaction: ITransaction
 ) {
-  try {
-    const result = await ua.sendTransaction(transaction, signature);
-    return result;
-  } catch (error) {
-    console.error("Failed to send transaction:", error);
-    throw error;
-  }
+  const walletClient = await getWalletClientFromConnector(connector);
+  const signature = await signUaRootHash(connector, transaction.rootHash);
+  const authorizations = await buildEIP7702Authorizations(transaction, walletClient);
+  return ua.sendTransaction(transaction, signature, authorizations);
+}
+
+export async function sendCrossChainCarePayment(
+  ua: UniversalAccount,
+  connector: Connector,
+  recipientAddress: string,
+  amountUsd: number
+) {
+  const amount = amountUsd.toFixed(2);
+  const transaction = await createCrossChainTransfer(ua, recipientAddress, amount);
+  return signAndSendUaTransaction(ua, connector, transaction);
 }

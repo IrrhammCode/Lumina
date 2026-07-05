@@ -1,150 +1,207 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import {
-  User,
-  Settings as SettingsIcon,
-  Bell,
-  Shield,
-  HelpCircle,
-  LogOut,
-  ChevronRight,
-} from "lucide-react";
+import dynamic from "next/dynamic";
+import { Bell, Shield, HelpCircle, LogOut, ChevronRight, Users, Repeat, Code2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import AppShell from "@/components/AppShell";
+import LuminaLogo from "@/components/LuminaLogo";
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { springSnappy } from "@/lib/motion";
+import { getStoredUser, clearStoredUser } from "@/lib/auth";
+import { getFamily } from "@/lib/family";
+import { getRules } from "@/lib/allowances";
+import { notificationsLabel, securityLabel } from "@/lib/prefs";
+import { profile, actions } from "@/lib/copy";
+import PageLoading from "@/components/PageLoading";
+import PageEnter from "@/components/PageEnter";
+import FamilyPortalCard from "@/components/FamilyPortalCard";
+import UADevPanel from "@/components/UADevPanel";
+import { hasParticleConfig } from "@/lib/particle-config";
+
+const ParticleLogoutButton = dynamic(() => import("@/components/ParticleLogoutButton"), { ssr: false });
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [userName, setUserName] = useState("User");
+  const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [ready, setReady] = useState(false);
+  const [familyCount, setFamilyCount] = useState(0);
+  const [ruleCount, setRuleCount] = useState(0);
+  const [showDev, setShowDev] = useState(false);
+  const [notifyLabel, setNotifyLabel] = useState("On");
+  const [securityVal, setSecurityVal] = useState("Face ID");
 
   useEffect(() => {
-    const user = localStorage.getItem("lumina_user");
-    if (user) {
-      const parsed = JSON.parse(user);
-      setUserEmail(parsed.email);
-      setUserName(parsed.email?.split("@")[0] || "User");
+    const user = getStoredUser();
+    if (!user?.loggedIn) {
+      router.replace("/login");
+      return;
     }
+    setUserEmail(user.email || "");
+    setUserName(user.email?.split("@")[0] || "User");
+    setFamilyCount(getFamily().length);
+    setRuleCount(getRules().length);
+    setNotifyLabel(notificationsLabel());
+    setSecurityVal(securityLabel());
+    setReady(true);
+  }, [router]);
+
+  useEffect(() => {
+    const refresh = () => {
+      setNotifyLabel(notificationsLabel());
+      setSecurityVal(securityLabel());
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
-  const handleLogout = async () => {
-    // In production: await logout()
-    localStorage.removeItem("lumina_user");
-    router.push("/login");
-  };
+  if (!ready) return <PageLoading />;
 
   return (
-    <div className="min-h-dvh flex flex-col pb-20 gradient-mesh">
-      {/* Header */}
-      <div className="px-5 pt-6 pb-6">
-        <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
-      </div>
-
-      <div className="flex-1 px-5 space-y-6">
-        {/* Profile Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 glass-light p-4 rounded-2xl"
-        >
-          <div className="w-14 h-14 rounded-full bg-brand-500/20 flex items-center justify-center">
-            <User size={24} className="text-brand-400" />
+    <>
+      <AppShell
+        compactHero
+        sheetClassName="settings-sheet"
+        hero={
+          <div className="hero-inner settings-hero">
+            <span className="hero-tagline-pill">{profile.eyebrow}</span>
+            <h1 className="hero-title-compact capitalize">{userName}</h1>
+            <p className="hero-subline">{userEmail}</p>
           </div>
-          <div>
-            <p className="text-base font-bold text-text-primary capitalize">
-              {userName}
-            </p>
-            <p className="text-sm text-text-secondary">{userEmail}</p>
+        }
+      >
+        <PageEnter>
+        <div className="settings-group">
+          <p className="settings-group-label">{profile.careGroup}</p>
+          <div className="settings-list">
+            <SettingsRow
+              icon={<Users size={16} />}
+              iconTone="care"
+              label={profile.family}
+              value={profile.familySub(familyCount)}
+              onClick={() => router.push("/settings/family")}
+            />
+            <SettingsRow
+              icon={<Repeat size={16} />}
+              iconTone="care"
+              label={profile.schedules}
+              value={`${ruleCount}`}
+              onClick={() => router.push("/rules")}
+            />
           </div>
-        </motion.div>
-
-        {/* Menu Sections */}
-        <div className="space-y-4">
-          <SettingsSection title="Preferences">
-            <SettingsItem
-              icon={<SettingsIcon size={18} />}
-              label="General Settings"
-            />
-            <SettingsItem
-              icon={<Bell size={18} />}
-              label="Notifications"
-            />
-          </SettingsSection>
-
-          <SettingsSection title="Security">
-            <SettingsItem
-              icon={<Shield size={18} />}
-              label="Biometric Authentication"
-              value="Enabled"
-            />
-            <SettingsItem
-              icon={<Shield size={18} />}
-              label="Wallet Address"
-              value="View Details"
-            />
-          </SettingsSection>
-
-          <SettingsSection title="Support">
-            <SettingsItem icon={<HelpCircle size={18} />} label="Help Center" />
-          </SettingsSection>
+          <div className="settings-portal-slot">
+            <FamilyPortalCard variant="compact" />
+          </div>
         </div>
 
-        {/* Logout */}
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl glass-light text-accent-coral font-medium hover:bg-surface-500/50 transition-colors"
-        >
-          <LogOut size={18} />
-          Sign Out
-        </motion.button>
-      </div>
+        <div className="settings-group">
+          <p className="settings-group-label">{profile.prefsGroup}</p>
+          <div className="settings-list">
+            <SettingsRow
+              icon={<Bell size={16} />}
+              iconTone="prefs"
+              label={profile.notifications}
+              value={notifyLabel}
+              onClick={() => router.push("/settings/notifications")}
+            />
+            <SettingsRow
+              icon={<Shield size={16} />}
+              iconTone="prefs"
+              label={profile.security}
+              value={securityVal}
+              onClick={() => router.push("/settings/security")}
+            />
+          </div>
+        </div>
 
+        <div className="settings-group">
+          <p className="settings-group-label">{profile.supportGroup}</p>
+          <div className="settings-list">
+            <SettingsRow
+              icon={<HelpCircle size={16} />}
+              iconTone="support"
+              label={profile.help}
+              onClick={() => router.push("/settings/help")}
+            />
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <button
+            type="button"
+            onClick={() => setShowDev(!showDev)}
+            className="flex items-center gap-2 settings-group-label w-full"
+          >
+            <Code2 size={12} />
+            {profile.dev}
+            <motion.span animate={{ rotate: showDev ? 90 : 0 }} transition={springSnappy} className="ml-auto">
+              <ChevronRight size={14} />
+            </motion.span>
+          </button>
+          <AnimatePresence>
+            {showDev && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <UADevPanel />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {hasParticleConfig() ? (
+          <ParticleLogoutButton onDone={() => router.push("/")} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => { clearStoredUser(); router.push("/"); }}
+            className="btn-tertiary w-full text-negative border-negative/30 mt-2"
+          >
+            <LogOut size={18} />
+            {actions.logOut}
+          </button>
+        )}
+
+        </PageEnter>
+
+        <div className="settings-footer-mark">
+          <LuminaLogo size={14} className="text-glow" />
+          <p className="text-caption text-xs">{profile.footer}</p>
+        </div>
+      </AppShell>
       <BottomNav />
-    </div>
+    </>
   );
 }
 
-function SettingsSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2 px-1">
-        {title}
-      </h3>
-      <div className="glass-light rounded-2xl overflow-hidden divide-y divide-surface-500/30">
-        {children}
-      </div>
-    </motion.div>
-  );
-}
-
-function SettingsItem({
+function SettingsRow({
   icon,
+  iconTone = "default",
   label,
   value,
+  onClick,
 }: {
   icon: React.ReactNode;
+  iconTone?: "default" | "care" | "prefs" | "support";
   label: string;
   value?: string;
+  onClick?: () => void;
 }) {
   return (
-    <button className="w-full flex items-center gap-3 p-4 hover:bg-surface-500/50 transition-colors active:bg-surface-500 text-left">
-      <div className="text-text-secondary">{icon}</div>
-      <p className="flex-1 text-sm font-medium text-text-primary">{label}</p>
-      {value && <span className="text-xs text-text-tertiary">{value}</span>}
-      <ChevronRight size={16} className="text-text-tertiary" />
+    <button type="button" onClick={onClick} className="settings-row">
+      <span className={`settings-row-icon settings-row-icon--${iconTone}`}>{icon}</span>
+      <span className="flex-1 text-sm font-semibold text-ink">{label}</span>
+      {value && <span className="text-caption text-xs">{value}</span>}
+      <ChevronRight size={16} className="text-mute" />
     </button>
   );
 }
+

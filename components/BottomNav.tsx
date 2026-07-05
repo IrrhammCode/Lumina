@@ -1,61 +1,104 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Send, Clock, Settings } from "lucide-react";
 import { motion } from "framer-motion";
+import { Home, Repeat, Clock, User } from "lucide-react";
+import { springSnappy } from "@/lib/motion";
+import { nav } from "@/lib/copy";
+import { getPendingRequests } from "@/lib/requests";
 
 const navItems = [
-  { icon: Home, label: "Home", href: "/dashboard" },
-  { icon: Send, label: "Send", href: "/send" },
-  { icon: Clock, label: "History", href: "/history" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: Home, label: nav.home, href: "/dashboard" },
+  { icon: Repeat, label: nav.autopilot, href: "/rules" },
+  { icon: Clock, label: nav.history, href: "/history" },
+  { icon: User, label: nav.profile, href: "/settings" },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => setPendingCount(getPendingRequests().length);
+    refresh();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("lumina:new-request", refresh);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("lumina:new-request", refresh);
+    };
+  }, [pathname]);
+
+  const hideOnWizard =
+    pathname?.startsWith("/rules/new") ||
+    pathname?.startsWith("/ask") ||
+    pathname === "/requests/new" ||
+    (pathname?.startsWith("/requests/") && pathname !== "/requests") ||
+    pathname?.startsWith("/pay") ||
+    pathname?.startsWith("/onboarding") ||
+    pathname?.startsWith("/settings/") ||
+    (pathname?.startsWith("/rules/") && pathname !== "/rules");
+
+  if (hideOnWizard) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass bottom-nav-safe">
-      <div className="max-w-lg mx-auto flex items-center justify-around px-2 pt-2 pb-1">
+    <motion.nav
+      initial={{ y: 32, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ ...springSnappy, delay: 0.1 }}
+      className="bottom-nav bottom-nav-safe"
+      aria-label="Main"
+    >
+      <div className="dock-shell">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+          const isActive =
+            pathname === item.href || pathname?.startsWith(item.href + "/");
           const Icon = item.icon;
-
           return (
             <button
               key={item.href}
               onClick={() => router.push(item.href)}
-              className="relative flex flex-col items-center gap-0.5 py-1 px-4 rounded-xl transition-colors duration-200"
+              className="nav-tab"
               aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
             >
-              <div className="relative">
-                {isActive && (
-                  <motion.div
-                    layoutId="nav-indicator"
-                    className="absolute -inset-2 rounded-xl bg-brand-500/15"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-                <Icon
-                  size={22}
-                  className={`relative z-10 transition-colors duration-200 ${
-                    isActive ? "text-brand-400" : "text-text-tertiary"
-                  }`}
-                  strokeWidth={isActive ? 2.5 : 1.8}
+              {isActive && (
+                <motion.span
+                  layoutId="nav-active-pill"
+                  className="nav-active-pill"
+                  transition={springSnappy}
                 />
-              </div>
-              <span
-                className={`text-[10px] font-medium transition-colors duration-200 ${
-                  isActive ? "text-brand-400" : "text-text-tertiary"
-                }`}
+              )}
+              <motion.span
+                animate={{ scale: isActive ? 1.05 : 1 }}
+                transition={springSnappy}
+                className="relative z-[1] flex flex-col items-center gap-0.5"
               >
-                {item.label}
-              </span>
+                <span className="nav-icon-wrap">
+                  <Icon
+                    size={20}
+                    className={isActive ? "text-ink" : "text-mute"}
+                    strokeWidth={isActive ? 2.4 : 1.8}
+                  />
+                  {item.href === "/dashboard" && pendingCount > 0 && (
+                    <span className="nav-badge" aria-label={`${pendingCount} pending`}>
+                      {pendingCount > 9 ? "9+" : pendingCount}
+                    </span>
+                  )}
+                </span>
+                <span className={`text-[9px] font-semibold ${isActive ? "text-ink" : "text-mute"}`}>
+                  {item.label}
+                </span>
+              </motion.span>
             </button>
           );
         })}
       </div>
-    </nav>
+    </motion.nav>
   );
 }

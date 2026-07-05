@@ -1,152 +1,166 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { History } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import TransactionCard from "@/components/TransactionCard";
-
-const allTransactions = [
-  {
-    type: "sent" as const,
-    name: "Maria Santos",
-    amount: "200.00",
-    currency: "USD",
-    date: "Today, 2:30 PM",
-    status: "completed" as const,
-  },
-  {
-    type: "received" as const,
-    name: "John Doe",
-    amount: "150.00",
-    currency: "USD",
-    date: "Yesterday, 10:15 AM",
-    status: "completed" as const,
-  },
-  {
-    type: "sent" as const,
-    name: "Priya Sharma",
-    amount: "500.00",
-    currency: "USD",
-    date: "Jul 1, 5:45 PM",
-    status: "pending" as const,
-  },
-  {
-    type: "sent" as const,
-    name: "James Mwangi",
-    amount: "75.00",
-    currency: "USD",
-    date: "Jun 30, 9:00 AM",
-    status: "completed" as const,
-  },
-  {
-    type: "received" as const,
-    name: "Ana Rodriguez",
-    amount: "300.00",
-    currency: "USD",
-    date: "Jun 28, 3:22 PM",
-    status: "completed" as const,
-  },
-  {
-    type: "sent" as const,
-    name: "Anh Nguyen",
-    amount: "125.00",
-    currency: "USD",
-    date: "Jun 25, 11:30 AM",
-    status: "completed" as const,
-  },
-  {
-    type: "sent" as const,
-    name: "Maria Santos",
-    amount: "200.00",
-    currency: "USD",
-    date: "Jun 20, 8:15 PM",
-    status: "completed" as const,
-  },
-];
+import ActivityCard from "@/components/ActivityCard";
+import ReceiptSheet from "@/components/ReceiptSheet";
+import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/EmptyState";
+import { StaggerList, StaggerItem } from "@/components/StaggerList";
+import { getStoredUser } from "@/lib/auth";
+import { getPayments, getMonthStats, type PaymentRecord } from "@/lib/allowances";
+import { history, home } from "@/lib/copy";
+import PageLoading from "@/components/PageLoading";
+import PageEnter from "@/components/PageEnter";
 
 export default function HistoryPage() {
   const router = useRouter();
+  const [ready, setReady] = useState(false);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [stats, setStats] = useState({ total: 0, count: 0 });
+  const [selected, setSelected] = useState<PaymentRecord | null>(null);
 
-  // Group by date
-  const today = allTransactions.filter((t) => t.date.startsWith("Today"));
-  const yesterday = allTransactions.filter((t) =>
-    t.date.startsWith("Yesterday")
-  );
-  const earlier = allTransactions.filter(
-    (t) => !t.date.startsWith("Today") && !t.date.startsWith("Yesterday")
-  );
+  const refresh = useCallback(() => {
+    setPayments(getPayments());
+    setStats(getMonthStats());
+  }, []);
+
+  useEffect(() => {
+    if (!getStoredUser()?.loggedIn) {
+      router.replace("/login");
+      return;
+    }
+    refresh();
+    setReady(true);
+  }, [router, refresh]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refresh]);
+
+  if (!ready) return <PageLoading />;
+
+  const today = payments.filter((p) => isToday(p.date));
+  const yesterday = payments.filter((p) => isYesterday(p.date));
+  const earlier = payments.filter((p) => !isToday(p.date) && !isYesterday(p.date));
+  const pullCount = payments.filter((p) => p.type === "pull").length;
+  const onChainCount = payments.filter((p) => p.settlementMode === "ua" || p.settlementExplorerUrl).length;
 
   return (
-    <div className="min-h-dvh flex flex-col pb-20 gradient-mesh">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-5 pb-3">
-        <button
-          onClick={() => router.push("/dashboard")}
-          className="p-2 rounded-xl hover:bg-surface-600/50 transition-colors"
-        >
-          <ArrowLeft size={20} className="text-text-secondary" />
-        </button>
-        <h1 className="text-lg font-bold text-text-primary">
-          Transaction History
-        </h1>
-      </div>
-
-      {/* Summary */}
-      <div className="px-5 mb-4">
-        <div className="flex gap-3">
-          <div className="flex-1 glass-light rounded-2xl p-3.5 text-center">
-            <p className="text-xs text-text-tertiary mb-0.5">Total Sent</p>
-            <p className="text-lg font-bold text-accent-coral">$1,100.00</p>
+    <>
+      <AppShell
+        compactHero
+        sheetClassName="history-sheet"
+        hero={
+          <div className="hero-inner history-hero">
+            <span className="hero-tagline-pill">{history.eyebrow}</span>
+            <h1 className="hero-title-compact">{history.title}</h1>
+            <p className="hero-subline">{history.sub}</p>
+            {payments.length > 0 && (
+              <div className="hero-stat-row">
+                <div className="hero-stat">
+                  <p className="hero-stat-value">${stats.total.toFixed(0)}</p>
+                  <p className="hero-stat-label">{history.sentMonth}</p>
+                </div>
+                <div className="hero-stat">
+                  <p className="hero-stat-value">{pullCount}</p>
+                  <p className="hero-stat-label">{history.pulls}</p>
+                </div>
+                {onChainCount > 0 && (
+                  <div className="hero-stat">
+                    <p className="hero-stat-value">{onChainCount}</p>
+                    <p className="hero-stat-label">{history.onChain}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <div className="flex-1 glass-light rounded-2xl p-3.5 text-center">
-            <p className="text-xs text-text-tertiary mb-0.5">Total Received</p>
-            <p className="text-lg font-bold text-accent-mint">$450.00</p>
-          </div>
-        </div>
-      </div>
+        }
+      >
+        <PageEnter>
+          {payments.length > 0 && (
+            <div className="history-summary-strip">
+              <div className="history-summary-cell">
+                <p className="history-summary-value">{stats.count}</p>
+                <p className="history-summary-label">{home.payments}</p>
+              </div>
+              <div className="history-summary-cell">
+                <p className="history-summary-value">{pullCount}</p>
+                <p className="history-summary-label">{history.pulls}</p>
+              </div>
+              {onChainCount > 0 && (
+                <div className="history-summary-cell history-summary-cell--ua">
+                  <p className="history-summary-value">{onChainCount}</p>
+                  <p className="history-summary-label">{history.onChain}</p>
+                </div>
+              )}
+            </div>
+          )}
 
-      {/* Transactions */}
-      <div className="px-5 flex-1 space-y-5">
-        {today.length > 0 && (
-          <TransactionGroup label="Today" transactions={today} />
-        )}
-        {yesterday.length > 0 && (
-          <TransactionGroup label="Yesterday" transactions={yesterday} />
-        )}
-        {earlier.length > 0 && (
-          <TransactionGroup label="Earlier" transactions={earlier} />
-        )}
-      </div>
+          <Group label={history.groups.today} items={today} onSelect={setSelected} />
+          <Group label={history.groups.yesterday} items={yesterday} onSelect={setSelected} />
+          <Group label={history.groups.earlier} items={earlier} onSelect={setSelected} />
 
+          {payments.length === 0 && (
+            <EmptyState
+              className="mt-4"
+              icon={History}
+              title={history.empty}
+              sub={history.emptySub}
+              actions={[
+                { label: history.emptyCtaPay, onClick: () => router.push("/pay") },
+                { label: history.emptyCtaInbox, onClick: () => router.push("/requests"), variant: "secondary" },
+              ]}
+            />
+          )}
+        </PageEnter>
+      </AppShell>
+
+      <ReceiptSheet payment={selected} onClose={() => setSelected(null)} />
       <BottomNav />
-    </div>
+    </>
   );
 }
 
-function TransactionGroup({
+function isToday(iso: string) {
+  const d = new Date(iso);
+  return d.toDateString() === new Date().toDateString();
+}
+
+function isYesterday(iso: string) {
+  const d = new Date(iso);
+  const n = new Date();
+  n.setDate(n.getDate() - 1);
+  return d.toDateString() === n.toDateString();
+}
+
+function Group({
   label,
-  transactions,
+  items,
+  onSelect,
 }: {
   label: string;
-  transactions: typeof allTransactions;
+  items: PaymentRecord[];
+  onSelect: (p: PaymentRecord) => void;
 }) {
+  if (!items.length) return null;
   return (
-    <div>
-      <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">
-        {label}
-      </p>
-      <div className="space-y-2">
-        {transactions.map((tx, index) => (
-          <motion.div
-            key={`${tx.name}-${tx.date}-${index}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <TransactionCard {...tx} />
-          </motion.div>
-        ))}
+    <div className="timeline-group">
+      <p className="timeline-label">{label}</p>
+      <div className="timeline-list timeline-list--cards">
+        <StaggerList>
+          {items.map((p) => (
+            <StaggerItem key={p.id}>
+              <ActivityCard payment={p} variant="timeline" onClick={() => onSelect(p)} />
+            </StaggerItem>
+          ))}
+        </StaggerList>
       </div>
     </div>
   );

@@ -1,7 +1,23 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  // Allow iPhone/other devices on the same WiFi (HMR websocket + dev assets)
+  allowedDevOrigins: [
+    "192.168.100.*",
+    "192.168.1.*",
+    "192.168.0.*",
+    "10.0.*",
+  ],
   webpack: (config, { webpack, isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@particle-network/universal-account-sdk": path.resolve(
+        process.cwd(),
+        "node_modules/@particle-network/universal-account-sdk/dist/index.mjs"
+      ),
+    };
+
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,

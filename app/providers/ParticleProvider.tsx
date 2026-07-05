@@ -1,38 +1,33 @@
 "use client";
 
 import React from "react";
-import { ConnectKitProvider, createConfig } from "@particle-network/connectkit";
-import { authWalletConnectors } from "@particle-network/connectkit/auth";
-import { arbitrum, arbitrumSepolia } from "viem/chains";
-import { wallet, EntryPosition } from "@particle-network/connectkit/wallet";
+import dynamic from "next/dynamic";
 
-const config = createConfig({
-  projectId: process.env.NEXT_PUBLIC_PROJECT_ID || "dummy_project_id",
-  clientKey: process.env.NEXT_PUBLIC_CLIENT_KEY || "dummy_client_key",
-  appId: process.env.NEXT_PUBLIC_APP_ID || "dummy_app_id",
-  walletConnectors: [
-    authWalletConnectors({
-      authTypes: ["google", "apple", "email", "phone"],
-      fiatCoin: "USD",
-      promptSettingConfig: {
-        promptMasterPasswordSettingWhenLogin: 0,
-        promptPaymentPasswordSettingWhenSign: 0,
-      },
-    }),
-  ],
-  plugins: [
-    wallet({
-      entryPosition: EntryPosition.TR,
-      visible: false, // Invisible wallet — no wallet UI exposed to user
-    }),
-  ],
-  chains: [arbitrum, arbitrumSepolia],
-});
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
+const clientKey = process.env.NEXT_PUBLIC_CLIENT_KEY;
+const appId = process.env.NEXT_PUBLIC_APP_ID;
+
+const hasParticleConfig =
+  !!projectId &&
+  !!clientKey &&
+  !!appId &&
+  projectId !== "dummy_project_id" &&
+  clientKey !== "dummy_client_key" &&
+  appId !== "dummy_app_id";
+
+const ConnectKitProviderLazy = dynamic(
+  () => import("./ConnectKitProviderInner"),
+  { ssr: false }
+);
 
 export default function ParticleProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <ConnectKitProvider config={config}>{children}</ConnectKitProvider>;
+  if (!hasParticleConfig) {
+    return <>{children}</>;
+  }
+
+  return <ConnectKitProviderLazy>{children}</ConnectKitProviderLazy>;
 }

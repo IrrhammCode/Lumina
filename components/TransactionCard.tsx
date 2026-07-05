@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import MemberAvatar from "@/components/MemberAvatar";
 
 interface TransactionCardProps {
   type: "sent" | "received";
@@ -9,6 +9,8 @@ interface TransactionCardProps {
   currency: string;
   date: string;
   status: "completed" | "pending" | "failed";
+  countryCode?: string;
+  isActive?: boolean;
   onClick?: () => void;
 }
 
@@ -19,61 +21,43 @@ export default function TransactionCard({
   currency,
   date,
   status,
+  countryCode,
+  isActive = false,
   onClick,
 }: TransactionCardProps) {
-  const statusColors = {
-    completed: "text-accent-mint",
-    pending: "text-accent-amber",
-    failed: "text-accent-coral",
-  };
-
-  const statusLabels = {
+  const statusLabel = {
     completed: "Completed",
-    pending: "Pending",
+    pending: "In transit",
     failed: "Failed",
   };
 
+  const statusColor = {
+    completed: "text-positive",
+    pending: "text-primary",
+    failed: "text-negative",
+  };
+
+  const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+
   return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-3.5 p-3.5 rounded-2xl glass-light hover:bg-surface-500/50 transition-all active:scale-[0.98] text-left"
-    >
-      {/* Icon */}
-      <div
-        className={`flex items-center justify-center w-10 h-10 rounded-full ${
-          type === "sent"
-            ? "bg-accent-coral/15 text-accent-coral"
-            : "bg-accent-mint/15 text-accent-mint"
-        }`}
-      >
-        {type === "sent" ? (
-          <ArrowUpRight size={18} strokeWidth={2.5} />
-        ) : (
-          <ArrowDownLeft size={18} strokeWidth={2.5} />
-        )}
+    <button onClick={onClick} className="list-row w-full">
+      {countryCode ? (
+        <MemberAvatar code={countryCode} size="md" />
+      ) : (
+        <div className="list-avatar text-xs font-bold">{initials}</div>
+      )}
+      <div className="flex-1 min-w-0 text-left">
+        <p className="text-sm font-semibold text-ink truncate">{name}</p>
+        <p className="text-caption text-xs truncate">{date}</p>
       </div>
-
-      {/* Details */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-text-primary truncate">
-          {name}
-        </p>
-        <p className="text-xs text-text-tertiary">{date}</p>
-      </div>
-
-      {/* Amount & Status */}
+      {isActive && status === "pending" && (
+        <span className="badge-pending mr-1" aria-label="In transit" />
+      )}
       <div className="text-right flex-shrink-0">
-        <p
-          className={`text-sm font-bold ${
-            type === "sent" ? "text-text-primary" : "text-accent-mint"
-          }`}
-        >
-          {type === "sent" ? "-" : "+"}
-          {currency} {amount}
+        <p className={`text-sm font-bold tabular-nums ${type === "received" ? "text-positive" : "text-ink"}`}>
+          {type === "sent" ? "−" : "+"}{currency} {amount}
         </p>
-        <p className={`text-xs ${statusColors[status]}`}>
-          {statusLabels[status]}
-        </p>
+        <p className={`text-xs font-medium ${statusColor[status]}`}>{statusLabel[status]}</p>
       </div>
     </button>
   );

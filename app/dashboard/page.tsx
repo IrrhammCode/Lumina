@@ -1,207 +1,258 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import {
-  Send,
-  ArrowDownLeft,
-  Eye,
-  EyeOff,
-  TrendingUp,
-  Bell,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import ApproveSuccessBanner from "@/components/ApproveSuccessBanner";
+import type { SettlementResult } from "@/lib/settlement";
+import AppShell from "@/components/AppShell";
+import BalanceCard from "@/components/BalanceCard";
+import QuickActions from "@/components/QuickActions";
+import RequestSpotlight from "@/components/RequestSpotlight";
+import SectionHead from "@/components/SectionHead";
 import BottomNav from "@/components/BottomNav";
-import TransactionCard from "@/components/TransactionCard";
+import RuleCard from "@/components/RuleCard";
+import NextRunBanner from "@/components/NextRunBanner";
+import EmptyRules from "@/components/EmptyRules";
+import BiometricPrompt from "@/components/BiometricPrompt";
+import PageLoading from "@/components/PageLoading";
+import PageEnter from "@/components/PageEnter";
+import FamilyPortalCard from "@/components/FamilyPortalCard";
+import { StaggerList, StaggerItem } from "@/components/StaggerList";
 
-// Demo transaction data
-const recentTransactions = [
-  {
-    type: "sent" as const,
-    name: "Maria Santos",
-    amount: "200.00",
-    currency: "USD",
-    date: "Today, 2:30 PM",
-    status: "completed" as const,
-  },
-  {
-    type: "received" as const,
-    name: "John Doe",
-    amount: "150.00",
-    currency: "USD",
-    date: "Yesterday, 10:15 AM",
-    status: "completed" as const,
-  },
-  {
-    type: "sent" as const,
-    name: "Priya Sharma",
-    amount: "500.00",
-    currency: "USD",
-    date: "Jul 1, 5:45 PM",
-    status: "pending" as const,
-  },
-];
+import { getStoredUser, isOnboarded } from "@/lib/auth";
+import { home, autopilot, actions, brand } from "@/lib/copy";
+import {
+  getRules, getNextRule, getMonthStats, toggleRuleStatus, type AllowanceRule,
+} from "@/lib/allowances";
+import { getPendingRequests, approveRequest, declineRequest, type CareRequest } from "@/lib/requests";
+import { formatUnifiedBalance } from "@/lib/balance";
+import { useLuminaUA } from "@/app/providers/UniversalAccountProvider";
+import { settlementPaymentFields } from "@/lib/settlement";
+import RequestToast from "@/components/RequestToast";
+import {
+  ensureAlertsInitialized,
+  peekUnseenRequest,
+  markRequestSeen,
+} from "@/lib/requestAlerts";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { balanceUsd, isUaMode, accountInfo, settle, refreshBalance } = useLuminaUA();
+  const [userName, setUserName] = useState("there");
+  const [ready, setReady] = useState(false);
+  const [rules, setRules] = useState<AllowanceRule[]>([]);
+  const [pending, setPending] = useState<CareRequest[]>([]);
+  const [nextRule, setNextRule] = useState<AllowanceRule | undefined>();
+  const [stats, setStats] = useState({ total: 0, count: 0 });
   const [balanceVisible, setBalanceVisible] = useState(true);
-  const [userName, setUserName] = useState("User");
+  const [approveId, setApproveId] = useState<string | null>(null);
+  const [showBio, setShowBio] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [lastSettlement, setLastSettlement] = useState<SettlementResult | null>(null);
+  const [toastRequest, setToastRequest] = useState<CareRequest | null>(null);
+
+  const refresh = useCallback(() => {
+    setRules(getRules());
+    setPending(getPendingRequests());
+    setNextRule(getNextRule());
+    setStats(getMonthStats());
+  }, []);
 
   useEffect(() => {
-    // Check auth state
-    const user = localStorage.getItem("lumina_user");
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    const parsed = JSON.parse(user);
-    setUserName(parsed.email?.split("@")[0] || "User");
-  }, [router]);
+    const user = getStoredUser();
+    if (!user?.loggedIn) { router.replace("/login"); return; }
+    if (!isOnboarded()) { router.replace("/onboarding"); return; }
+    setUserName(user.email?.split("@")[0] || "there");
+    ensureAlertsInitialized();
+    refresh();
+    setReady(true);
+  }, [router, refresh]);
 
-  const totalBalance = "2,450.00";
-  const savingsThisMonth = "43.50";
+  useEffect(() => {
+    if (!ready) return;
+    const unseen = peekUnseenRequest();
+    if (unseen) setToastRequest(unseen);
+  }, [ready, pending]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refresh]);
+
+  useEffect(() => {
+    const onNew = (e: Event) => {
+      const req = (e as CustomEvent<CareRequest>).detail;
+      if (req) setToastRequest(req);
+    };
+    window.addEventListener("lumina:new-request", onNew);
+    return () => window.removeEventListener("lumina:new-request", onNew);
+  }, []);
+
+  const onBioConfirm = async () => {
+    if (!approveId) return;
+    setShowBio(false);
+    const req = pending.find((r) => r.id === approveId);
+    const amount = req?.amount ?? 0;
+    const result = await settle(amount);
+    setLastSettlement(result);
+    approveRequest(approveId, settlementPaymentFields(result));
+    if (req) setSuccessMsg(home.paidSuccess(req.amount, req.title));
+    setApproveId(null);
+    refresh();
+    void refreshBalance();
+    setTimeout(() => {
+      setSuccessMsg(null);
+      setLastSettlement(null);
+    }, 6000);
+  };
+
+  const approveRequest_ = pending.find((r) => r.id === approveId);
+  if (!ready) return <PageLoading />;
+
+  const hero = (
+    <div className="hero-inner dashboard-hero">
+      <p className="hero-greeting capitalize">{home.greeting(userName)}</p>
+      {pending.length > 0 ? (
+        <span className="hero-pending-pill">
+          {pending.length} {home.awaiting.toLowerCase()}
+        </span>
+      ) : (
+        <span className="hero-tagline-pill">{brand.tagline}</span>
+      )}
+      <h1 className="hero-title-compact">
+        {pending.length > 0 ? home.pullTitle : home.autopilotTitle}
+      </h1>
+      <p className="hero-subline">
+        {pending.length > 0 ? home.heroSubPending : home.heroSubIdle}
+      </p>
+    </div>
+  );
+
+  const floating = (
+    <BalanceCard
+      balance={formatUnifiedBalance(balanceUsd, stats.total)}
+      balanceLabel={isUaMode ? home.balanceUaLabel : home.balanceLabel}
+      accountBadge={isUaMode ? (accountInfo?.useEIP7702 ? "EIP-7702 · Universal" : "Universal Account") : undefined}
+      visible={balanceVisible}
+      onToggle={() => setBalanceVisible(!balanceVisible)}
+      stats={[
+        { value: `$${stats.total.toFixed(0)}`, label: home.sentMonth },
+        { value: String(stats.count), label: home.payments },
+        { value: String(pending.length), label: home.awaiting },
+      ]}
+      highlightAwaiting={pending.length > 0}
+    />
+  );
 
   return (
-    <div className="min-h-dvh flex flex-col pb-20 gradient-mesh">
-      {/* Header */}
-      <div className="px-5 pt-6 pb-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs text-text-tertiary">Welcome back</p>
-          <h1 className="text-lg font-bold text-text-primary capitalize">
-            {userName} 👋
-          </h1>
-        </div>
-        <button className="relative p-2.5 rounded-xl glass-light hover:bg-surface-500/50 transition-colors">
-          <Bell size={18} className="text-text-secondary" />
-          <div className="absolute top-2 right-2 w-2 h-2 bg-accent-coral rounded-full" />
-        </button>
-      </div>
+    <>
+      <AppShell hero={hero} floating={floating} compactHero>
+        <PageEnter>
+        <AnimatePresence>
+          {successMsg && (
+            <ApproveSuccessBanner
+              message={successMsg}
+              sub={home.paidSuccessSub}
+              settlement={lastSettlement}
+              onDismiss={() => {
+                setSuccessMsg(null);
+                setLastSettlement(null);
+              }}
+            />
+          )}
+        </AnimatePresence>
 
-      {/* Balance Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mx-5 mb-5"
-      >
-        <div className="relative overflow-hidden rounded-3xl p-6 gradient-brand shadow-xl shadow-brand-500/15">
-          {/* Decorative circles */}
-          <div className="absolute top-[-20%] right-[-10%] w-40 h-40 rounded-full bg-white/10" />
-          <div className="absolute bottom-[-30%] left-[-5%] w-32 h-32 rounded-full bg-white/5" />
+        <AnimatePresence mode="popLayout">
+          {pending.length > 0 && (
+            <motion.div key="spotlight" layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+              <RequestSpotlight
+                requests={pending}
+                onApprove={(id) => { setApproveId(id); setShowBio(true); }}
+                onDecline={(id) => { declineRequest(id); refresh(); }}
+                onOpen={(id) => router.push(`/requests/${id}`)}
+                onSeeAll={() => router.push("/requests")}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-white/70 font-medium">
-                Total Balance
-              </p>
-              <button
-                onClick={() => setBalanceVisible(!balanceVisible)}
-                className="p-1 rounded-lg hover:bg-white/10 transition-colors"
-              >
-                {balanceVisible ? (
-                  <Eye size={16} className="text-white/70" />
-                ) : (
-                  <EyeOff size={16} className="text-white/70" />
-                )}
+        <QuickActions pendingCount={pending.length} variant="row" />
+
+        {pending.length === 0 ? (
+          <section className="section-block">
+            <SectionHead eyebrow={home.portalEyebrow} title={home.portalTitle} />
+            <FamilyPortalCard />
+          </section>
+        ) : (
+          <div className="mb-5">
+            <FamilyPortalCard variant="compact" />
+          </div>
+        )}
+
+        <section className="section-block">
+          <SectionHead
+            eyebrow={home.autopilotEyebrow}
+            title={home.autopilotTitle}
+            action={rules.length > 0 ? actions.seeAll : undefined}
+            onAction={rules.length > 0 ? () => router.push("/rules") : undefined}
+          />
+          {nextRule && pending.length === 0 && (
+            <NextRunBanner rule={nextRule} onClick={() => router.push(`/rules/${nextRule.id}`)} />
+          )}
+          {rules.length === 0 ? (
+            <EmptyRules onCreate={() => router.push("/rules/new")} onSuggestion={(need) => router.push(`/rules/new?need=${need}`)} />
+          ) : (
+            <div className="rule-stack">
+              <StaggerList>
+                {rules.slice(0, 4).map((rule) => (
+                  <StaggerItem key={rule.id}>
+                    <RuleCard rule={rule} variant="row" onToggle={(id) => { toggleRuleStatus(id); refresh(); }} onClick={(id) => router.push(`/rules/${id}`)} />
+                  </StaggerItem>
+                ))}
+              </StaggerList>
+              <button type="button" onClick={() => router.push("/rules/new")} className="add-rule-link">
+                <Plus size={16} />
+                {home.addRule}
               </button>
             </div>
+          )}
+        </section>
+        </PageEnter>
+      </AppShell>
 
-            <motion.h2
-              key={balanceVisible ? "visible" : "hidden"}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-3xl font-bold text-white mb-1"
-            >
-              {balanceVisible ? `$${totalBalance}` : "••••••"}
-            </motion.h2>
-
-            <div className="flex items-center gap-1 text-white/70 text-xs">
-              <TrendingUp size={12} />
-              <span>
-                Saved ${savingsThisMonth} in fees this month
-              </span>
-            </div>
+      <BiometricPrompt
+        isOpen={showBio}
+        onConfirm={onBioConfirm}
+        onCancel={() => { setShowBio(false); setApproveId(null); }}
+        context="approve"
+        amount={approveRequest_ ? `$${approveRequest_.amount.toFixed(2)}` : undefined}
+        recipient={approveRequest_?.title}
+      />
+      <AnimatePresence>
+        {toastRequest && (
+          <div className="request-toast-host">
+            <RequestToast
+              request={toastRequest}
+              onView={() => {
+                markRequestSeen(toastRequest.id);
+                setToastRequest(null);
+                router.push(`/requests/${toastRequest.id}`);
+              }}
+              onDismiss={() => {
+                markRequestSeen(toastRequest.id);
+                setToastRequest(null);
+              }}
+            />
           </div>
-        </div>
-      </motion.div>
-
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.15 }}
-        className="px-5 mb-6"
-      >
-        <div className="flex gap-3">
-          <button
-            onClick={() => router.push("/send")}
-            className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl glass-light hover:bg-surface-500/50 active:scale-[0.97] transition-all"
-          >
-            <div className="w-11 h-11 rounded-full bg-brand-500/15 flex items-center justify-center">
-              <Send size={18} className="text-brand-400" />
-            </div>
-            <span className="text-xs font-semibold text-text-primary">
-              Send
-            </span>
-          </button>
-
-          <button className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl glass-light hover:bg-surface-500/50 active:scale-[0.97] transition-all">
-            <div className="w-11 h-11 rounded-full bg-accent-mint/15 flex items-center justify-center">
-              <ArrowDownLeft size={18} className="text-accent-mint" />
-            </div>
-            <span className="text-xs font-semibold text-text-primary">
-              Receive
-            </span>
-          </button>
-
-          <button
-            onClick={() => router.push("/history")}
-            className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl glass-light hover:bg-surface-500/50 active:scale-[0.97] transition-all"
-          >
-            <div className="w-11 h-11 rounded-full bg-accent-sky/15 flex items-center justify-center">
-              <TrendingUp size={18} className="text-accent-sky" />
-            </div>
-            <span className="text-xs font-semibold text-text-primary">
-              Activity
-            </span>
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Recent Transactions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="px-5 flex-1"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-text-primary">
-            Recent Transactions
-          </h3>
-          <button
-            onClick={() => router.push("/history")}
-            className="text-xs text-brand-400 font-medium"
-          >
-            See all
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          {recentTransactions.map((tx, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + index * 0.1 }}
-            >
-              <TransactionCard {...tx} />
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+        )}
+      </AnimatePresence>
 
       <BottomNav />
-    </div>
+    </>
   );
 }

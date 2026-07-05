@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Lumina">
+  <rect width="192" height="192" rx="44" fill="#E8EBE6"/>
+  <path d="M96 36L148 68V124L96 156L44 124V68L96 36Z" stroke="#0E0F0C" stroke-width="8" fill="none"/>
+  <path d="M96 68L124 84V108L96 124L68 108V84L96 68Z" fill="#F0B429"/>
+</svg>
