@@ -8,6 +8,7 @@ import { Plus, Check, Users } from "lucide-react";
 import WizardShell from "@/components/WizardShell";
 import PageLoading from "@/components/PageLoading";
 import { getStoredUser, setOnboarded } from "@/lib/auth";
+import { api } from "@/lib/api-client";
 import { hasParticleConfig } from "@/lib/particle-config";
 import { slideForward, slideBack, fadeScale } from "@/lib/motion";
 import { defaultFamily, getFamily, setFamily, type FamilyMember } from "@/lib/family";
@@ -67,9 +68,11 @@ export default function OnboardingPage() {
     setCustomRelation("");
   };
 
-  const finish = () => {
+  const finish = async () => {
     const picked = getFamily().filter((m) => selected.includes(m.id));
-    setFamily(picked.length > 0 ? picked : SUGGESTED);
+    const family = picked.length > 0 ? picked : SUGGESTED;
+    setFamily(family);
+    await api.completeOnboarding(family);
     setOnboarded();
     router.replace("/dashboard");
   };

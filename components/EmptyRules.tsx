@@ -18,8 +18,8 @@ type EmptyRulesProps = {
 
 export default function EmptyRules({ onCreate, onSuggestion }: EmptyRulesProps) {
   return (
-    <motion.div variants={fadeScale} initial="initial" animate="animate" className="text-center py-8 px-4">
-      <div className="w-12 h-12 rounded-xl bg-primary-pale flex items-center justify-center mx-auto mb-3">
+    <motion.div variants={fadeScale} initial="initial" animate="animate" className="empty-rules-panel text-center">
+      <div className="empty-rules-icon">
         <Repeat size={22} className="text-glow" />
       </div>
       <p className="text-sm font-bold text-ink mb-1">{autopilot.emptyTitle}</p>

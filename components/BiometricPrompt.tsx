@@ -82,7 +82,7 @@ export default function BiometricPrompt({
             initial="hidden"
             animate="show"
             exit="exit"
-            className="w-full max-w-lg card rounded-b-none rounded-t-xl pb-10 relative"
+            className="bio-sheet w-full max-w-lg card rounded-b-none rounded-t-xl pb-10 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-center mb-4 pt-2">

@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { springSnappy } from "@/lib/motion";
 import { getStoredUser, clearStoredUser } from "@/lib/auth";
+import { logoutFromServer } from "@/lib/sync";
 import { getFamily } from "@/lib/family";
 import { getRules } from "@/lib/allowances";
 import { notificationsLabel, securityLabel } from "@/lib/prefs";
@@ -162,7 +163,7 @@ export default function SettingsPage() {
         ) : (
           <button
             type="button"
-            onClick={() => { clearStoredUser(); router.push("/"); }}
+            onClick={() => { void logoutFromServer().then(() => { clearStoredUser(); router.push("/"); }); }}
             className="btn-tertiary w-full text-negative border-negative/30 mt-2"
           >
             <LogOut size={18} />

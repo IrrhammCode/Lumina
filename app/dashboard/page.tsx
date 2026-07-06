@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import ApproveSuccessBanner from "@/components/ApproveSuccessBanner";
+import SettlementErrorBanner from "@/components/SettlementErrorBanner";
 import type { SettlementResult } from "@/lib/settlement";
 import AppShell from "@/components/AppShell";
 import BalanceCard from "@/components/BalanceCard";
@@ -14,6 +15,7 @@ import SectionHead from "@/components/SectionHead";
 import BottomNav from "@/components/BottomNav";
 import RuleCard from "@/components/RuleCard";
 import NextRunBanner from "@/components/NextRunBanner";
+import AutopilotQueueBanner from "@/components/AutopilotQueueBanner";
 import EmptyRules from "@/components/EmptyRules";
 import BiometricPrompt from "@/components/BiometricPrompt";
 import PageLoading from "@/components/PageLoading";
@@ -22,20 +24,24 @@ import FamilyPortalCard from "@/components/FamilyPortalCard";
 import { StaggerList, StaggerItem } from "@/components/StaggerList";
 
 import { getStoredUser, isOnboarded } from "@/lib/auth";
-import { home, autopilot, actions, brand } from "@/lib/copy";
+import { home, autopilot, actions, brand, pull, settlement } from "@/lib/copy";
 import {
-  getRules, getNextRule, getMonthStats, toggleRuleStatus, type AllowanceRule,
+  getRules, getNextRule, getMonthStats, toggleRuleStatus, getPayments, type AllowanceRule, type PaymentRecord,
 } from "@/lib/allowances";
 import { getPendingRequests, approveRequest, declineRequest, type CareRequest } from "@/lib/requests";
 import { formatUnifiedBalance } from "@/lib/balance";
 import { useLuminaUA } from "@/app/providers/UniversalAccountProvider";
 import { settlementPaymentFields } from "@/lib/settlement";
+import { confirmSettlementAfterPay } from "@/lib/settlement-poll";
 import RequestToast from "@/components/RequestToast";
 import {
   ensureAlertsInitialized,
   peekUnseenRequest,
   markRequestSeen,
 } from "@/lib/requestAlerts";
+import { hydrateFromServer, pollInbox, tickAutopilot, INBOX_POLL_MS } from "@/lib/sync";
+import { requestBrowserNotificationPermission } from "@/lib/notifications";
+import { getPrefs } from "@/lib/prefs";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -50,24 +56,46 @@ export default function DashboardPage() {
   const [approveId, setApproveId] = useState<string | null>(null);
   const [showBio, setShowBio] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastSettlement, setLastSettlement] = useState<SettlementResult | null>(null);
   const [toastRequest, setToastRequest] = useState<CareRequest | null>(null);
+  const [autopilotQueue, setAutopilotQueue] = useState<PaymentRecord | null>(null);
+  const [autopilotRule, setAutopilotRule] = useState<AllowanceRule | undefined>();
+  const [bioContext, setBioContext] = useState<"approve" | "pay">("approve");
+
+  const syncAutopilotQueue = useCallback(() => {
+    const queued = getPayments().find((p) => p.type === "auto" && p.status === "pending");
+    setAutopilotQueue(queued ?? null);
+    if (queued?.ruleId) {
+      setAutopilotRule(getRules().find((r) => r.id === queued.ruleId));
+    } else {
+      setAutopilotRule(undefined);
+    }
+  }, []);
 
   const refresh = useCallback(() => {
     setRules(getRules());
     setPending(getPendingRequests());
     setNextRule(getNextRule());
     setStats(getMonthStats());
-  }, []);
+    syncAutopilotQueue();
+  }, [syncAutopilotQueue]);
 
   useEffect(() => {
-    const user = getStoredUser();
-    if (!user?.loggedIn) { router.replace("/login"); return; }
-    if (!isOnboarded()) { router.replace("/onboarding"); return; }
-    setUserName(user.email?.split("@")[0] || "there");
-    ensureAlertsInitialized();
-    refresh();
-    setReady(true);
+    void (async () => {
+      const user = getStoredUser();
+      if (!user?.loggedIn) { router.replace("/login"); return; }
+      if (!isOnboarded()) { router.replace("/onboarding"); return; }
+      setUserName(user.email?.split("@")[0] || "there");
+      await hydrateFromServer();
+      await tickAutopilot();
+      if (getPrefs().notifyRequests || getPrefs().notifyAutopilot) {
+        void requestBrowserNotificationPermission();
+      }
+      ensureAlertsInitialized();
+      refresh();
+      setReady(true);
+    })();
   }, [router, refresh]);
 
   useEffect(() => {
@@ -77,12 +105,33 @@ export default function DashboardPage() {
   }, [ready, pending]);
 
   useEffect(() => {
+    if (!ready) return;
+    const tick = () => {
+      void (async () => {
+        await tickAutopilot();
+        const { pending: next } = await pollInbox();
+        setPending(next);
+        refresh();
+      })();
+    };
+    tick();
+    const id = setInterval(tick, INBOX_POLL_MS);
+    return () => clearInterval(id);
+  }, [ready, refresh]);
+
+  useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === "visible") refresh();
+      if (document.visibilityState !== "visible" || !ready) return;
+      void (async () => {
+        await tickAutopilot();
+        const { pending: next } = await pollInbox();
+        setPending(next);
+        refresh();
+      })();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [refresh]);
+  }, [ready, refresh]);
 
   useEffect(() => {
     const onNew = (e: Event) => {
@@ -94,13 +143,46 @@ export default function DashboardPage() {
   }, []);
 
   const onBioConfirm = async () => {
-    if (!approveId) return;
     setShowBio(false);
+    setErrorMsg(null);
+
+    if (bioContext === "pay" && autopilotQueue) {
+      const result = await settle(autopilotQueue.amount);
+      setLastSettlement(result);
+      const confirmed = await confirmSettlementAfterPay({
+        ruleId: autopilotQueue.ruleId,
+        memberId: autopilotQueue.memberId,
+        needType: autopilotQueue.needType,
+        amount: autopilotQueue.amount,
+        kind: "auto",
+        settlement: settlementPaymentFields(result),
+      });
+      if (!confirmed.ok) {
+        setErrorMsg(confirmed.reason ?? settlement.failed);
+        return;
+      }
+      setSuccessMsg(
+        autopilot.queueSuccess(autopilotRule?.label ?? autopilotQueue.ruleLabel ?? "Autopilot"),
+      );
+      refresh();
+      void refreshBalance();
+      setTimeout(() => {
+        setSuccessMsg(null);
+        setLastSettlement(null);
+      }, 6000);
+      return;
+    }
+
+    if (!approveId) return;
     const req = pending.find((r) => r.id === approveId);
     const amount = req?.amount ?? 0;
     const result = await settle(amount);
     setLastSettlement(result);
-    approveRequest(approveId, settlementPaymentFields(result));
+    const approved = await approveRequest(approveId, settlementPaymentFields(result));
+    if (!approved.ok) {
+      setErrorMsg(approved.reason ?? pull.settlementFailed);
+      return;
+    }
     if (req) setSuccessMsg(home.paidSuccess(req.amount, req.title));
     setApproveId(null);
     refresh();
@@ -165,6 +247,15 @@ export default function DashboardPage() {
               }}
             />
           )}
+          {errorMsg && (
+            <SettlementErrorBanner
+              message={errorMsg}
+              onDismiss={() => {
+                setErrorMsg(null);
+                setLastSettlement(null);
+              }}
+            />
+          )}
         </AnimatePresence>
 
         <AnimatePresence mode="popLayout">
@@ -172,8 +263,8 @@ export default function DashboardPage() {
             <motion.div key="spotlight" layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
               <RequestSpotlight
                 requests={pending}
-                onApprove={(id) => { setApproveId(id); setShowBio(true); }}
-                onDecline={(id) => { declineRequest(id); refresh(); }}
+                onApprove={(id) => { setBioContext("approve"); setApproveId(id); setShowBio(true); }}
+                onDecline={(id) => { void declineRequest(id).then((ok) => { if (ok) refresh(); }); }}
                 onOpen={(id) => router.push(`/requests/${id}`)}
                 onSeeAll={() => router.push("/requests")}
               />
@@ -201,7 +292,16 @@ export default function DashboardPage() {
             action={rules.length > 0 ? actions.seeAll : undefined}
             onAction={rules.length > 0 ? () => router.push("/rules") : undefined}
           />
-          {nextRule && pending.length === 0 && (
+          {autopilotQueue && (
+            <div className="mb-3">
+              <AutopilotQueueBanner
+                payment={autopilotQueue}
+                rule={autopilotRule}
+                onSettle={() => { setBioContext("pay"); setShowBio(true); }}
+              />
+            </div>
+          )}
+          {nextRule && pending.length === 0 && !autopilotQueue && (
             <NextRunBanner rule={nextRule} onClick={() => router.push(`/rules/${nextRule.id}`)} />
           )}
           {rules.length === 0 ? (
@@ -228,10 +328,20 @@ export default function DashboardPage() {
       <BiometricPrompt
         isOpen={showBio}
         onConfirm={onBioConfirm}
-        onCancel={() => { setShowBio(false); setApproveId(null); }}
-        context="approve"
-        amount={approveRequest_ ? `$${approveRequest_.amount.toFixed(2)}` : undefined}
-        recipient={approveRequest_?.title}
+        onCancel={() => { setShowBio(false); setApproveId(null); setBioContext("approve"); }}
+        context={bioContext}
+        amount={
+          bioContext === "pay" && autopilotQueue
+            ? `$${autopilotQueue.amount.toFixed(2)}`
+            : approveRequest_
+              ? `$${approveRequest_.amount.toFixed(2)}`
+              : undefined
+        }
+        recipient={
+          bioContext === "pay"
+            ? autopilotRule?.label ?? autopilotQueue?.ruleLabel
+            : approveRequest_?.title
+        }
       />
       <AnimatePresence>
         {toastRequest && (

@@ -47,66 +47,77 @@ export default function RulesPage() {
     <>
       <AppShell
         compactHero
+        sheetClassName="rules-sheet"
         hero={
-          <div className="hero-inner">
-            <p className="hero-greeting">{autopilot.eyebrow}</p>
+          <div className="hero-inner rules-hero">
+            <span className="hero-tagline-pill">{autopilot.eyebrow}</span>
             <h1 className="hero-title-compact">{autopilot.title}</h1>
-            <p className="text-sm opacity-60 mt-1">{autopilot.sub}</p>
-            <div className="hero-stat-row">
-              <div className="hero-stat">
-                <p className="hero-stat-value">{activeCount}</p>
-                <p className="hero-stat-label">{autopilot.activeCount}</p>
+            <p className="hero-subline">{autopilot.sub}</p>
+            {rules.length > 0 && (
+              <div className="hero-stat-row">
+                <div className="hero-stat">
+                  <p className="hero-stat-value">{activeCount}</p>
+                  <p className="hero-stat-label">{autopilot.activeCount}</p>
+                </div>
+                <div className="hero-stat">
+                  <p className="hero-stat-value">{rules.length}</p>
+                  <p className="hero-stat-label">{autopilot.totalCount}</p>
+                </div>
               </div>
-              <div className="hero-stat">
-                <p className="hero-stat-value">{rules.length}</p>
-                <p className="hero-stat-label">{autopilot.totalCount}</p>
-              </div>
-            </div>
+            )}
           </div>
         }
       >
         <PageEnter>
-        <div className="mb-5">
-          <FilterPills
-            layoutId="rules-filter"
-            variant="ink"
-            active={filter}
-            onChange={(id) => setFilter(id as typeof filter)}
-            items={[
-              { id: "all", label: autopilot.filters.all },
-              { id: "active", label: autopilot.filters.active },
-              { id: "paused", label: autopilot.filters.paused },
-            ]}
-          />
-        </div>
+          <div className="rules-filter-row">
+            <FilterPills
+              layoutId="rules-filter"
+              variant="ink"
+              active={filter}
+              onChange={(id) => setFilter(id as typeof filter)}
+              items={[
+                { id: "all", label: autopilot.filters.all },
+                { id: "active", label: autopilot.filters.active },
+                { id: "paused", label: autopilot.filters.paused },
+              ]}
+            />
+          </div>
 
-        <AnimatePresence mode="wait">
-          {filtered.length === 0 ? (
-            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <EmptyRules
-                onCreate={() => router.push("/rules/new")}
-                onSuggestion={(need) => router.push(`/rules/new?need=${need}`)}
-              />
-            </motion.div>
-          ) : (
-            <motion.div key={filter} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <div className="rule-stack">
-                <StaggerList>
-                  {filtered.map((rule) => (
-                    <StaggerItem key={rule.id}>
-                      <RuleCard
-                        rule={rule}
-                        variant="row"
-                        onToggle={(id) => { toggleRuleStatus(id); refresh(); }}
-                        onClick={(id) => router.push(`/rules/${id}`)}
-                      />
-                    </StaggerItem>
-                  ))}
-                </StaggerList>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {filtered.length === 0 ? (
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <EmptyRules
+                  onCreate={() => router.push("/rules/new")}
+                  onSuggestion={(need) => router.push(`/rules/new?need=${need}`)}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key={filter}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="rule-stack rules-list">
+                  <StaggerList>
+                    {filtered.map((rule) => (
+                      <StaggerItem key={rule.id}>
+                        <RuleCard
+                          rule={rule}
+                          variant="row"
+                          onToggle={(id) => {
+                            toggleRuleStatus(id);
+                            refresh();
+                          }}
+                          onClick={(id) => router.push(`/rules/${id}`)}
+                        />
+                      </StaggerItem>
+                    ))}
+                  </StaggerList>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </PageEnter>
       </AppShell>
 

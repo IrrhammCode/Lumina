@@ -1,5 +1,10 @@
+import { api } from "./api-client";
+import { isLoggedIn } from "./auth";
+import { confirmSettlementAfterPay } from "./settlement-poll";
+import { isServerBacked } from "./sync";
+import type { PaymentSettlementFields } from "./settlement";
 import { getMemberById } from "./family";
-import { addPayment, NEED_META, type NeedType } from "./allowances";
+import { addPayment, getPayments, NEED_META, type NeedType } from "./allowances";
 import { emitNewRequest } from "./events";
 
 export type RequestStatus = "pending" | "declined" | "paid";
@@ -86,7 +91,7 @@ export function defaultRequestMessage(needType: NeedType, relation: string): str
   return lines[needType];
 }
 
-export function createRequest(input: {
+export async function createRequest(input: {
   memberId: string;
   needType: NeedType;
   title: string;
@@ -95,36 +100,91 @@ export function createRequest(input: {
   dueLabel: string;
   billNote: string;
   source: RequestSource;
-}): CareRequest {
+  portalToken?: string;
+}): Promise<CareRequest> {
+  if (input.source === "family" && input.portalToken) {
+    const remote = await api.createPortalRequest({
+      token: input.portalToken,
+      memberId: input.memberId,
+      needType: input.needType,
+      title: input.title,
+      message: input.message,
+      amount: input.amount,
+      dueLabel: input.dueLabel,
+      billNote: input.billNote,
+    });
+    if (remote.ok) {
+      emitNewRequest(remote.data.request);
+      return remote.data.request;
+    }
+  }
+
   const request: CareRequest = {
     id: `req_${Date.now()}`,
     ...input,
     status: "pending",
     createdAt: new Date().toISOString(),
   };
+
+  if (isLoggedIn()) {
+    const remote = await api.createRequest(input);
+    if (remote.ok) {
+      saveRequests([remote.data.request, ...getRequests()]);
+      emitNewRequest(remote.data.request);
+      return remote.data.request;
+    }
+  }
+
   saveRequests([request, ...getRequests()]);
   emitNewRequest(request);
   return request;
 }
 
-export function declineRequest(id: string): void {
-  const requests = getRequests().map((r) =>
-    r.id === id ? { ...r, status: "declined" as const, resolvedAt: new Date().toISOString() } : r
+export async function declineRequest(id: string): Promise<boolean> {
+  const request = getRequestById(id);
+  if (!request || request.status !== "pending") return false;
+
+  if (isLoggedIn()) {
+    const remote = await api.patchRequest(id, "decline");
+    if (remote.ok) {
+      saveRequests(
+        getRequests().map((r) => (r.id === id ? remote.data.request : r))
+      );
+      return true;
+    }
+    return false;
+  }
+
+  saveRequests(
+    getRequests().map((r) =>
+      r.id === id ? { ...r, status: "declined" as const, resolvedAt: new Date().toISOString() } : r
+    )
   );
-  saveRequests(requests);
+  return true;
 }
 
-export function approveRequest(
+export type ApproveRequestResult = { ok: true } | { ok: false; reason?: string };
+
+export async function approveRequest(
   id: string,
-  settlement?: {
-    settlementRef?: string;
-    settlementExplorerUrl?: string;
-    settlementMode?: "ua" | "demo";
-  }
-): boolean {
+  settlement?: PaymentSettlementFields
+): Promise<ApproveRequestResult> {
   const request = getRequestById(id);
   const member = request ? getMemberById(request.memberId) : undefined;
-  if (!request || !member || request.status !== "pending") return false;
+  if (!request || !member || request.status !== "pending") {
+    return { ok: false, reason: "Request not found" };
+  }
+
+  if (isLoggedIn()) {
+    const result = await confirmSettlementAfterPay({
+      requestId: id,
+      amount: request.amount,
+      kind: "pull",
+      settlement: settlement ?? { settlementRef: "", settlementMode: "ua" },
+    });
+    if (!result.ok) return { ok: false, reason: result.reason };
+    return { ok: true };
+  }
 
   addPayment({
     id: `pay_${Date.now()}`,
@@ -143,11 +203,12 @@ export function approveRequest(
     settlementMode: settlement?.settlementMode ?? (settlement?.settlementExplorerUrl ? "ua" : "demo"),
   });
 
-  const requests = getRequests().map((r) =>
-    r.id === id ? { ...r, status: "paid" as const, resolvedAt: new Date().toISOString() } : r
+  saveRequests(
+    getRequests().map((r) =>
+      r.id === id ? { ...r, status: "paid" as const, resolvedAt: new Date().toISOString() } : r
+    )
   );
-  saveRequests(requests);
-  return true;
+  return { ok: true };
 }
 
 export function formatRequestAge(iso: string): string {
@@ -162,6 +223,7 @@ export function formatRequestAge(iso: string): string {
 
 function seedRequestsIfNeeded(): void {
   if (typeof window === "undefined") return;
+  if (isServerBacked()) return;
   if (localStorage.getItem(REQUESTS_SEEDED)) return;
 
   const now = new Date();

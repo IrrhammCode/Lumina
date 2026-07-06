@@ -8,6 +8,8 @@ import AuthShell from "@/components/AuthShell";
 import { getPostLoginPath } from "@/lib/auth";
 import { slideBack, slideForward } from "@/lib/motion";
 import { auth, actions } from "@/lib/copy";
+import { api } from "@/lib/api-client";
+import { loginAndHydrate } from "@/lib/sync";
 
 export default function MockLogin() {
   const router = useRouter();
@@ -21,7 +23,13 @@ export default function MockLogin() {
     e.preventDefault();
     if (!email) return;
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
+    setError("");
+    const result = await api.sendOtp(email);
+    if (!result.ok) {
+      setError(result.error);
+      setIsLoading(false);
+      return;
+    }
     setStep("otp");
     setIsLoading(false);
   };
@@ -32,21 +40,35 @@ export default function MockLogin() {
     next[index] = value;
     setOtp(next);
     if (value && index < 5) document.getElementById(`otp-${index + 1}`)?.focus();
-    if (next.every((d) => d !== "")) handleOtpVerify();
+    if (next.every((d) => d !== "")) void handleOtpVerify(next.join(""));
   };
 
-  const handleOtpVerify = async () => {
+  const handleOtpVerify = async (code?: string) => {
+    const otpCode = code ?? otp.join("");
+    if (otpCode.length !== 6) return;
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    localStorage.setItem("lumina_user", JSON.stringify({ email, loggedIn: true }));
+    setError("");
+    const result = await api.verifyOtp(email, otpCode);
+    if (!result.ok) {
+      setError(result.error);
+      setIsLoading(false);
+      return;
+    }
+    await loginAndHydrate(result.data.user);
     router.replace(getPostLoginPath());
     setIsLoading(false);
   };
 
-  const handleSocial = async (provider: string) => {
+  const handleSocial = async (provider: "google" | "apple") => {
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    localStorage.setItem("lumina_user", JSON.stringify({ email: `user@${provider}.com`, loggedIn: true }));
+    setError("");
+    const result = await api.socialLogin(provider);
+    if (!result.ok) {
+      setError(result.error);
+      setIsLoading(false);
+      return;
+    }
+    await loginAndHydrate(result.data.user);
     router.replace(getPostLoginPath());
     setIsLoading(false);
   };
@@ -127,6 +149,7 @@ export default function MockLogin() {
                 <Loader2 className="animate-spin text-glow" />
               </div>
             )}
+            {error && <p className="text-negative text-xs text-center mt-3">{error}</p>}
             <p className="auth-terms">{auth.terms}</p>
           </motion.div>
         )}

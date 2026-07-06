@@ -2,6 +2,7 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
+import SessionHydrator from "@/components/SessionHydrator";
 
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 const clientKey = process.env.NEXT_PUBLIC_CLIENT_KEY;
@@ -26,8 +27,12 @@ export default function ParticleProvider({
   children: React.ReactNode;
 }) {
   if (!hasParticleConfig) {
-    return <>{children}</>;
+    return <SessionHydrator>{children}</SessionHydrator>;
   }
 
-  return <ConnectKitProviderLazy>{children}</ConnectKitProviderLazy>;
+  return (
+    <ConnectKitProviderLazy>
+      <SessionHydrator>{children}</SessionHydrator>
+    </ConnectKitProviderLazy>
+  );
 }

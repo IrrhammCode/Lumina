@@ -43,7 +43,7 @@ export default function ReceiptSheet({ payment, onClose }: ReceiptSheetProps) {
                 <p className="text-caption text-sm mt-1">{dateStr}</p>
               </motion.div>
 
-              <motion.div variants={staggerItem} className="card-flat space-y-3">
+              <motion.div variants={staggerItem} className="receipt-detail-card space-y-3">
                 <Row label={receipt.to} value={`${getCountryMeta(payment.countryCode).name} · ${payment.memberName}`} />
                 <Row label={receipt.for} value={payment.ruleLabel ?? meta.label} />
                 <Row label={receipt.type} value={typeLabel[payment.type]} badge={payment.type} />

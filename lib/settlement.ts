@@ -14,6 +14,8 @@ export type PaymentSettlementFields = {
   settlementRef: string;
   settlementExplorerUrl?: string;
   settlementMode: "ua" | "demo";
+  uaTransactionId?: string;
+  txHash?: string;
 };
 
 export function paymentToSettlement(payment: {
@@ -34,6 +36,7 @@ export function settlementPaymentFields(result: SettlementResult): PaymentSettle
     settlementRef: result.ref,
     settlementExplorerUrl: result.explorerUrl,
     settlementMode: result.mode,
+    uaTransactionId: result.uaTransactionId,
   };
 }
 

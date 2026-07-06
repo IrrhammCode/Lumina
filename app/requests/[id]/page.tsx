@@ -17,7 +17,7 @@ import {
 } from "@/lib/requests";
 import { getMemberById } from "@/lib/family";
 import { NEED_META, getPaymentByRequestId } from "@/lib/allowances";
-import { pull } from "@/lib/copy";
+import { pull, settlement } from "@/lib/copy";
 import NeedIcon from "@/components/NeedIcon";
 import MemberAvatar from "@/components/MemberAvatar";
 import RequestSourceBadge from "@/components/RequestSourceBadge";
@@ -35,6 +35,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [lastSettlement, setLastSettlement] = useState<SettlementResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [status, setStatus] = useState(() => getRequestById(id)?.status ?? "pending");
 
   const request = getRequestById(id);
@@ -60,18 +61,24 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
 
   const onBioConfirm = async () => {
     setShowBio(false);
+    setErrorMsg(null);
     setProcessing(true);
     const result = await settle(request.amount);
     setLastSettlement(result);
-    approveRequest(id, settlementPaymentFields(result));
+    const approved = await approveRequest(id, settlementPaymentFields(result));
     void refreshBalance();
     setProcessing(false);
+    if (!approved.ok) {
+      setErrorMsg(approved.reason ?? pull.settlementFailed);
+      return;
+    }
     setSuccess(true);
     setStatus("paid");
   };
 
-  const handleDecline = () => {
-    declineRequest(id);
+  const handleDecline = async () => {
+    const ok = await declineRequest(id);
+    if (!ok) return;
     setStatus("declined");
     router.back();
   };
@@ -138,9 +145,13 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
           <MetaRow label={pull.arrives} value={pull.arrivesShort} />
         </div>
 
+        {errorMsg && (
+          <p className="text-sm font-medium text-negative text-center py-2">{errorMsg}</p>
+        )}
+
         <AnimatePresence mode="wait">
           {processing ? (
-            <ProcessingOverlay key="processing" label={pull.paying(member.relation)} />
+            <ProcessingOverlay key="processing" label={settlement.confirming} />
           ) : success || status === "paid" ? (
             <PaymentSuccessPanel
               key="success"

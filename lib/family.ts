@@ -1,3 +1,5 @@
+import { api } from "./api-client";
+import { isLoggedIn } from "./auth";
 import { countryCodeFromName, normalizeCountryCode } from "./countries";
 
 export type FamilyMember = {
@@ -51,8 +53,14 @@ export function getFamily(): FamilyMember[] {
   }
 }
 
+function syncFamily(members: FamilyMember[]): void {
+  if (!isLoggedIn()) return;
+  void api.putFamily(members);
+}
+
 export function saveFamily(members: FamilyMember[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
+  syncFamily(members);
 }
 
 export function getMemberById(id: string): FamilyMember | undefined {

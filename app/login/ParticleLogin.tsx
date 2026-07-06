@@ -1,46 +1,65 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Mail, Loader2, Wallet } from "lucide-react";
 import { useAccount, useModal } from "@particle-network/connectkit";
+import type { Connector } from "@particle-network/connector-core";
 import AuthShell from "@/components/AuthShell";
 import { getPostLoginPath } from "@/lib/auth";
 import { slideBack } from "@/lib/motion";
 import { auth, actions } from "@/lib/copy";
+import { api } from "@/lib/api-client";
+import { loginAndHydrate } from "@/lib/sync";
+import { signSiweMessage } from "@/lib/siwe-client";
 
-function persistWalletUser(address: string) {
-  localStorage.setItem(
-    "lumina_user",
-    JSON.stringify({
-      email: `${address.slice(0, 6)}…${address.slice(-4)}@wallet`,
-      loggedIn: true,
-      walletAddress: address,
-    })
-  );
+async function persistWalletUser(address: string, connector: Connector): Promise<boolean> {
+  const challenge = await api.walletChallenge(address);
+  if (!challenge.ok) {
+    if (process.env.NODE_ENV !== "production") {
+      const fallback = await api.walletLogin(address);
+      if (!fallback.ok) return false;
+      await loginAndHydrate(fallback.data.user);
+      return true;
+    }
+    return false;
+  }
+
+  const signature = await signSiweMessage(connector, challenge.data.message);
+  const result = await api.walletVerify(address, challenge.data.message, signature);
+  if (!result.ok) return false;
+  await loginAndHydrate(result.data.user);
+  return true;
 }
 
 export default function ParticleLogin() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { isConnected, address } = useAccount();
-  const { setOpen } = useModal({
-    onConnect: ({ address: connected }) => {
-      if (connected) {
-        persistWalletUser(connected);
-        router.replace(getPostLoginPath());
-      }
-    },
-  });
+  const [error, setError] = useState("");
+  const signingRef = useRef(false);
+  const { isConnected, address, connector } = useAccount();
+  const { setOpen } = useModal();
 
   useEffect(() => {
-    if (isConnected && address) {
-      persistWalletUser(address);
-      router.replace(getPostLoginPath());
-    }
-  }, [isConnected, address, router]);
+    if (!isConnected || !address || !connector || signingRef.current) return;
+    void (async () => {
+      signingRef.current = true;
+      setIsLoading(true);
+      setError("");
+      try {
+        const ok = await persistWalletUser(address, connector);
+        if (ok) router.replace(getPostLoginPath());
+        else setError("Wallet login failed");
+      } catch {
+        setError("Wallet signature was rejected");
+      } finally {
+        setIsLoading(false);
+        signingRef.current = false;
+      }
+    })();
+  }, [isConnected, address, connector, router]);
 
   const openConnect = () => {
     setIsLoading(true);
@@ -52,6 +71,20 @@ export default function ParticleLogin() {
     e.preventDefault();
     if (!email) return;
     openConnect();
+  };
+
+  const handleSocial = async (provider: "google" | "apple") => {
+    setIsLoading(true);
+    setError("");
+    const result = await api.socialLogin(provider, email || undefined);
+    if (!result.ok) {
+      setError(result.error);
+      setIsLoading(false);
+      return;
+    }
+    await loginAndHydrate(result.data.user);
+    router.replace(getPostLoginPath());
+    setIsLoading(false);
   };
 
   return (
@@ -79,10 +112,10 @@ export default function ParticleLogin() {
         </div>
 
         <div className="auth-social-row">
-          <button type="button" onClick={openConnect} disabled={isLoading} className="auth-social-btn">
+          <button type="button" onClick={() => handleSocial("google")} disabled={isLoading} className="auth-social-btn">
             {auth.google}
           </button>
-          <button type="button" onClick={openConnect} disabled={isLoading} className="auth-social-btn">
+          <button type="button" onClick={() => handleSocial("apple")} disabled={isLoading} className="auth-social-btn">
             {auth.apple}
           </button>
         </div>
@@ -104,6 +137,7 @@ export default function ParticleLogin() {
             {isLoading ? <Loader2 size={18} className="animate-spin" /> : actions.continue}
           </button>
         </form>
+        {error && <p className="text-negative text-xs text-center mt-3">{error}</p>}
         <p className="auth-terms">{auth.terms}</p>
       </motion.div>
     </AuthShell>

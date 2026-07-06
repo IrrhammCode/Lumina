@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Share2, ExternalLink, Link2, Check } from "lucide-react";
+import { Copy, Share2, ExternalLink, Link2, Check, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import LuminaLogo from "@/components/LuminaLogo";
 import MemberAvatar from "@/components/MemberAvatar";
-import { getFamilyPortalUrl, copyPortalUrl, sharePortalUrl } from "@/lib/portal";
+import {
+  getFamilyPortalUrl,
+  copyPortalUrl,
+  sharePortalUrl,
+  rotatePortalLink,
+} from "@/lib/portal";
+import { getPortalToken } from "@/lib/auth";
 import { getFamily } from "@/lib/family";
 import { portal } from "@/lib/copy";
 import { popIn } from "@/lib/motion";
@@ -19,17 +25,31 @@ type FamilyPortalCardProps = {
 export default function FamilyPortalCard({ variant = "card", memberId: initialMemberId }: FamilyPortalCardProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [hasToken, setHasToken] = useState(() => !!getPortalToken());
   const [displayUrl, setDisplayUrl] = useState("lumina.app/ask");
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(initialMemberId ?? null);
   const members = getFamily();
 
-  useEffect(() => {
+  const refreshUrl = useCallback(() => {
+    setHasToken(!!getPortalToken());
     setDisplayUrl(
       getFamilyPortalUrl(selectedMemberId ?? undefined).replace(/^https?:\/\//, "")
     );
   }, [selectedMemberId]);
 
+  useEffect(() => {
+    refreshUrl();
+  }, [refreshUrl]);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 2500);
+  };
+
   const handleCopy = async () => {
+    if (!hasToken) return;
     const ok = await copyPortalUrl(selectedMemberId ?? undefined);
     if (ok) {
       setCopied(true);
@@ -37,7 +57,25 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
     }
   };
 
-  const previewHref = selectedMemberId ? `/ask?member=${selectedMemberId}` : "/ask";
+  const handleReset = async () => {
+    if (!window.confirm(portal.resetConfirm)) return;
+    setResetting(true);
+    const token = await rotatePortalLink();
+    setResetting(false);
+    if (token) {
+      refreshUrl();
+      showToast(portal.resetDone);
+    }
+  };
+
+  const previewPath = (() => {
+    const full = getFamilyPortalUrl(selectedMemberId ?? undefined);
+    try {
+      return new URL(full).pathname + new URL(full).search;
+    } catch {
+      return selectedMemberId ? `/ask?member=${selectedMemberId}` : "/ask";
+    }
+  })();
 
   if (variant === "compact") {
     return (
@@ -48,23 +86,47 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-ink">{portal.title}</p>
-            <p className="text-caption text-xs truncate">{displayUrl}</p>
+            <p className="text-caption text-xs truncate">
+              {hasToken ? displayUrl : portal.revokedHint}
+            </p>
           </div>
         </div>
         <div className="portal-card-actions portal-card-actions-compact">
-          <button type="button" onClick={handleCopy} className="btn-secondary btn-compact flex-1">
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={!hasToken}
+            className="btn-secondary btn-compact flex-1"
+          >
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? portal.copied : portal.copy}
           </button>
           <button
             type="button"
             onClick={() => sharePortalUrl(selectedMemberId ?? undefined)}
+            disabled={!hasToken}
             className="btn-primary btn-compact flex-1"
           >
             <Share2 size={14} />
             {portal.share}
           </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={resetting}
+            className="btn-ghost btn-compact"
+            title={portal.resetLink}
+          >
+            <RefreshCw size={14} className={resetting ? "animate-spin" : ""} />
+          </button>
         </div>
+        <AnimatePresence>
+          {toastMsg && (
+            <motion.p variants={popIn} initial="hidden" animate="show" exit="exit" className="portal-copied-toast">
+              {toastMsg}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -75,10 +137,20 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
         <span className="portal-card-logo">
           <LuminaLogo size={20} />
         </span>
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-ink">{portal.title}</p>
-          <p className="text-caption text-xs">{portal.sub}</p>
+          <p className="text-caption text-xs">{hasToken ? portal.sub : portal.revokedHint}</p>
         </div>
+        <button
+          type="button"
+          onClick={handleReset}
+          disabled={resetting}
+          className="btn-ghost btn-compact shrink-0"
+          title={portal.resetLink}
+        >
+          <RefreshCw size={16} className={resetting ? "animate-spin" : ""} />
+          <span className="sr-only">{portal.resetLink}</span>
+        </button>
       </div>
 
       {members.length > 0 && (
@@ -109,30 +181,36 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
 
       <div className="portal-url-box">
         <p className="portal-url-label">{portal.linkLabel}</p>
-        <p className="portal-url-value">{displayUrl}</p>
+        <p className="portal-url-value">{hasToken ? displayUrl : portal.revoked}</p>
       </div>
 
       <div className="portal-card-actions">
-        <button type="button" onClick={handleCopy} className="btn-secondary flex-1">
+        <button type="button" onClick={handleCopy} disabled={!hasToken} className="btn-secondary flex-1">
           {copied ? <Check size={16} /> : <Copy size={16} />}
           {copied ? portal.copied : portal.copy}
         </button>
         <button
           type="button"
           onClick={() => sharePortalUrl(selectedMemberId ?? undefined)}
+          disabled={!hasToken}
           className="btn-secondary flex-1"
         >
           <Share2 size={16} />
           {portal.share}
         </button>
-        <button type="button" onClick={() => router.push(previewHref)} className="btn-ghost flex-1">
+        <button
+          type="button"
+          onClick={() => router.push(previewPath)}
+          disabled={!hasToken}
+          className="btn-ghost flex-1"
+        >
           <ExternalLink size={16} />
           {portal.preview}
         </button>
       </div>
 
       <AnimatePresence>
-        {copied && (
+        {(copied || toastMsg) && (
           <motion.p
             variants={popIn}
             initial="hidden"
@@ -140,7 +218,7 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
             exit="exit"
             className="portal-copied-toast"
           >
-            {portal.copied}
+            {toastMsg ?? portal.copied}
           </motion.p>
         )}
       </AnimatePresence>

@@ -1,3 +1,9 @@
+import { api } from "./api-client";
+import { isLoggedIn } from "./auth";
+import { confirmSettlementAfterPay } from "./settlement-poll";
+import type { PaymentSettlementFields } from "./settlement";
+import { hydrateFromServer, isServerBacked } from "./sync";
+
 import { getMemberById, type FamilyMember } from "./family";
 import { normalizeCountryCode } from "./countries";
 
@@ -136,16 +142,18 @@ export function getRuleById(id: string): AllowanceRule | undefined {
   return getRules().find((r) => r.id === id);
 }
 
-export function upsertRule(rule: AllowanceRule): void {
+export function upsertRule(rule: AllowanceRule, options?: { sync?: boolean }): void {
   const rules = getRules();
   const idx = rules.findIndex((r) => r.id === rule.id);
   if (idx >= 0) rules[idx] = rule;
   else rules.push(rule);
   saveRules(rules);
+  if (isLoggedIn() && options?.sync !== false) void api.saveRule(rule);
 }
 
 export function deleteRule(id: string): void {
   saveRules(getRules().filter((r) => r.id !== id));
+  if (isLoggedIn()) void api.deleteRule(id);
 }
 
 export function toggleRuleStatus(id: string): void {
@@ -153,6 +161,7 @@ export function toggleRuleStatus(id: string): void {
     r.id === id ? { ...r, status: r.status === "active" ? "paused" : "active" } as AllowanceRule : r
   );
   saveRules(rules);
+  if (isLoggedIn()) void api.patchRule(id, { action: "toggle" });
 }
 
 function migratePayment(raw: Record<string, unknown>): PaymentRecord {
@@ -195,7 +204,7 @@ export function getPaymentByRequestId(requestId: string): PaymentRecord | undefi
   return getPayments().find((p) => p.requestId === requestId);
 }
 
-export function createManualPayment(input: {
+export async function createManualPayment(input: {
   memberId: string;
   needType: NeedType;
   amount: number;
@@ -203,9 +212,29 @@ export function createManualPayment(input: {
   settlementRef?: string;
   settlementExplorerUrl?: string;
   settlementMode?: "ua" | "demo";
-}): PaymentRecord | null {
+  uaTransactionId?: string;
+  txHash?: string;
+}): Promise<PaymentRecord | null> {
   const member = getMemberById(input.memberId);
   if (!member) return null;
+
+  if (isLoggedIn()) {
+    const result = await confirmSettlementAfterPay({
+      memberId: member.id,
+      needType: input.needType,
+      amount: input.amount,
+      kind: "manual",
+      settlement: {
+        settlementRef: input.settlementRef ?? "",
+        settlementExplorerUrl: input.settlementExplorerUrl,
+        settlementMode: input.settlementMode ?? "ua",
+        uaTransactionId: input.uaTransactionId,
+        txHash: input.txHash,
+      },
+    });
+    if (!result.ok) return null;
+    return result.payment ?? getPayments()[0] ?? null;
+  }
 
   const payment: PaymentRecord = {
     id: `pay_${Date.now()}`,
@@ -294,17 +323,30 @@ export function createRule(input: {
   };
 }
 
-export function executeRule(
+export async function executeRule(
   ruleId: string,
-  settlement?: {
-    settlementRef?: string;
-    settlementExplorerUrl?: string;
-    settlementMode?: "ua" | "demo";
-  }
-): PaymentRecord | null {
+  settlement: PaymentSettlementFields
+): Promise<PaymentRecord | null> {
   const rule = getRuleById(ruleId);
   const member = rule ? getMemberById(rule.memberId) : undefined;
   if (!rule || !member) return null;
+
+  if (isLoggedIn()) {
+    const result = await confirmSettlementAfterPay({
+      ruleId: rule.id,
+      memberId: member.id,
+      needType: rule.needType,
+      amount: rule.amount,
+      kind: "auto",
+      settlement,
+    });
+    if (!result.ok) return null;
+    return (
+      result.payment ??
+      getPayments().find((p) => p.ruleId === ruleId && p.status === "completed") ??
+      null
+    );
+  }
 
   const payment: PaymentRecord = {
     id: `pay_${Date.now()}`,
@@ -318,9 +360,9 @@ export function executeRule(
     type: "auto",
     status: "completed",
     date: new Date().toISOString(),
-    settlementRef: settlement?.settlementRef ?? `0x${Math.random().toString(16).slice(2, 10)}…arb`,
-    settlementExplorerUrl: settlement?.settlementExplorerUrl,
-    settlementMode: settlement?.settlementMode ?? (settlement?.settlementExplorerUrl ? "ua" : "demo"),
+    settlementRef: settlement.settlementRef,
+    settlementExplorerUrl: settlement.settlementExplorerUrl,
+    settlementMode: settlement.settlementMode,
   };
 
   addPayment(payment);
@@ -330,13 +372,14 @@ export function executeRule(
     lastRunAt: payment.date,
     nextRunAt: computeNextRunAt(rule.schedule),
   };
-  upsertRule(updated);
+  upsertRule(updated, { sync: false });
 
   return payment;
 }
 
 function seedIfNeeded(): void {
   if (typeof window === "undefined") return;
+  if (isServerBacked()) return;
   if (localStorage.getItem(SEEDED_KEY)) return;
 
   const now = new Date();

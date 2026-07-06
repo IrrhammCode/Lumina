@@ -3,6 +3,7 @@
 import { LogOut } from "lucide-react";
 import { useDisconnect } from "@particle-network/connectkit";
 import { clearStoredUser } from "@/lib/auth";
+import { logoutFromServer } from "@/lib/sync";
 import { actions } from "@/lib/copy";
 
 export default function ParticleLogoutButton({ onDone }: { onDone: () => void }) {
@@ -14,6 +15,7 @@ export default function ParticleLogoutButton({ onDone }: { onDone: () => void })
     } catch {
       /* wallet may already be disconnected */
     }
+    await logoutFromServer();
     clearStoredUser();
     onDone();
   };

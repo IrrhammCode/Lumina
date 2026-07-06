@@ -13,6 +13,7 @@ import NeedIcon from "@/components/NeedIcon";
 import PageLoading from "@/components/PageLoading";
 import FeeSavings from "@/components/FeeSavings";
 import { getStoredUser } from "@/lib/auth";
+import { api } from "@/lib/api-client";
 import { getFamily, getMemberById, type FamilyMember } from "@/lib/family";
 import { NEED_META, type NeedType } from "@/lib/allowances";
 import {
@@ -57,6 +58,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
   const [billNote, setBillNote] = useState("");
   const [dueDays, setDueDays] = useState(5);
   const [submitting, setSubmitting] = useState(false);
+  const [portalToken, setPortalToken] = useState<string | null>(null);
 
   const family = getFamily().filter(
     (m) =>
@@ -75,15 +77,24 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
     }
     if (isFamily) {
       const memberId = searchParams.get("member");
-      if (memberId) {
+      const token = searchParams.get("token");
+      if (token) setPortalToken(token);
+
+      const applyMember = (m: FamilyMember) => {
+        setMember(m);
+        setMessage(defaultRequestMessage("school", m.relation));
+        setNeedType("school");
+        setSkippedWho(true);
+        setStep("what");
+      };
+
+      if (memberId && token) {
+        void api.getPortalMember(token, memberId).then((res) => {
+          if (res.ok) applyMember(res.data.member);
+        });
+      } else if (memberId) {
         const m = getMemberById(memberId);
-        if (m) {
-          setMember(m);
-          setMessage(defaultRequestMessage("school", m.relation));
-          setNeedType("school");
-          setSkippedWho(true);
-          setStep("what");
-        }
+        if (m) applyMember(m);
       }
     }
     setReady(true);
@@ -117,7 +128,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
     if (!member || numAmount <= 0) return;
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 900));
-    createRequest({
+    await createRequest({
       memberId: member.id,
       needType,
       title: buildRequestTitle(needType, member.relation, billNote),
@@ -126,6 +137,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
       dueLabel,
       billNote: billNote.trim(),
       source: mode,
+      portalToken: portalToken ?? undefined,
     });
     setSubmitting(false);
     setStep("done");

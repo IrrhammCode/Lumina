@@ -9,6 +9,7 @@ import SettingsToggleRow from "@/components/SettingsToggleRow";
 import PageLoading from "@/components/PageLoading";
 import { getStoredUser } from "@/lib/auth";
 import { getPrefs, updatePrefs, type LuminaPrefs } from "@/lib/prefs";
+import { requestBrowserNotificationPermission } from "@/lib/notifications";
 import { notifications as copy } from "@/lib/copy";
 
 export default function NotificationsSettingsPage() {
@@ -25,9 +26,13 @@ export default function NotificationsSettingsPage() {
     setReady(true);
   }, [router]);
 
-  const toggle = (key: keyof Pick<LuminaPrefs, "notifyRequests" | "notifyAutopilot" | "notifyPromos">) => {
-    const next = updatePrefs({ [key]: !prefs[key] });
+  const toggle = async (key: keyof Pick<LuminaPrefs, "notifyRequests" | "notifyAutopilot" | "notifyPromos">) => {
+    const turningOn = !prefs[key];
+    const next = updatePrefs({ [key]: turningOn });
     setPrefs(next);
+    if (key === "notifyRequests" && turningOn) {
+      await requestBrowserNotificationPermission();
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

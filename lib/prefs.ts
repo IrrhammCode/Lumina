@@ -1,3 +1,6 @@
+import { api } from "./api-client";
+import { isLoggedIn } from "./auth";
+
 export type LuminaPrefs = {
   notifyRequests: boolean;
   notifyAutopilot: boolean;
@@ -7,7 +10,7 @@ export type LuminaPrefs = {
 
 const PREFS_KEY = "lumina_prefs";
 
-const DEFAULT_PREFS: LuminaPrefs = {
+export const DEFAULT_PREFS: LuminaPrefs = {
   notifyRequests: true,
   notifyAutopilot: true,
   notifyPromos: false,
@@ -27,6 +30,7 @@ export function getPrefs(): LuminaPrefs {
 
 export function savePrefs(prefs: LuminaPrefs): void {
   localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  if (isLoggedIn()) void api.patchPrefs(prefs);
 }
 
 export function updatePrefs(patch: Partial<LuminaPrefs>): LuminaPrefs {

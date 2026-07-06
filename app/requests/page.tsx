@@ -14,6 +14,7 @@ import FilterPills from "@/components/FilterPills";
 import { StaggerList, StaggerItem } from "@/components/StaggerList";
 import { getStoredUser } from "@/lib/auth";
 import { getRequests, type CareRequest } from "@/lib/requests";
+import { hydrateFromServer, pollInbox, INBOX_POLL_MS } from "@/lib/sync";
 import { markAllPendingSeen } from "@/lib/requestAlerts";
 import { pull, history, brand } from "@/lib/copy";
 import PageLoading from "@/components/PageLoading";
@@ -45,14 +46,24 @@ export default function RequestsPage() {
       return;
     }
     const load = () => setRequests(getRequests());
-    load();
-    markAllPendingSeen();
-    setReady(true);
+    void (async () => {
+      await hydrateFromServer();
+      load();
+      markAllPendingSeen();
+      setReady(true);
+    })();
+    const sync = () => {
+      void pollInbox().then(() => load());
+    };
+    const id = setInterval(sync, INBOX_POLL_MS);
     const onVisible = () => {
-      if (document.visibilityState === "visible") load();
+      if (document.visibilityState === "visible") sync();
     };
     document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [router]);
 
   if (!ready) return <PageLoading />;

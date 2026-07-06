@@ -93,6 +93,13 @@ export const pull = {
   statusPaid: "Sent",
   statusDeclined: "Passed",
   emptyCtaInbox: "Open inbox",
+  settlementFailed: "Payment didn't confirm. Try again.",
+};
+
+export const settlement = {
+  failed: "Payment didn't confirm. Try again.",
+  pendingTimeout: "Still waiting for on-chain confirmation.",
+  confirming: "Confirming on-chain…",
 };
 
 export const fees = {
@@ -118,11 +125,18 @@ export const portal = {
   pickMember: "Link for",
   anyone: "Anyone",
   memberShare: "Share link",
+  resetLink: "Reset link",
+  resetConfirm: "Old links stop working. Family will need the new link.",
+  resetDone: "New link ready",
+  revoked: "Portal link disabled",
+  revokedHint: "Reset link to share with family again.",
 };
 
 export const toast = {
   newRequest: (name: string, amount: number) => `${name} asked · $${amount}`,
   newRequestSub: "Tap to review and approve",
+  autopilotQueue: (label: string, amount: number) => `Autopilot ready · $${amount} · ${label}`,
+  autopilotQueueSub: "Tap home to settle on-chain",
   view: "View",
   dismiss: "Dismiss",
 };
@@ -196,6 +210,9 @@ export const autopilot = {
   emptyCta: "Set first schedule",
   create: "New autopilot",
   nextLabel: "Up next",
+  queueLabel: "Autopilot ready",
+  queueSub: (amount: number) => `Tap to settle $${amount.toFixed(0)} on-chain`,
+  queueSuccess: (label: string) => `Autopilot sent · ${label}`,
   runNow: "Send now",
   delete: "Remove schedule",
   activate: "Turn on autopilot",
@@ -413,7 +430,7 @@ export const onboarding = {
   perks: [
     "They request from home — you tap approve",
     "Or set autopilot for pulsa, bills, school",
-    "Sign in with email. No wallet to set up.",
+    "Connect wallet once — autopilot settles on-chain.",
   ],
   perksUa: [
     "One Universal Account across Arbitrum, Base, Ethereum",
@@ -446,9 +463,10 @@ export const onboarding = {
 };
 
 export const auth = {
-  signIn: "Sign in",
-  badge: "Sign in",
+  signIn: "Connect wallet",
+  badge: "Web3",
   signInSub: "Same account on every device.",
+  signInSubWeb3: "Sign in with your wallet — no email, no password.",
   otpTitle: "Check your inbox",
   otpSub: (email: string) => `We sent a code to ${email}`,
   otpHint: "Enter the 6-digit code we sent",
@@ -456,9 +474,11 @@ export const auth = {
   apple: "Apple",
   emailOr: "or use email",
   emailPh: "you@email.com",
-  walletCta: "Connect Universal Account",
+  walletCta: "Connect wallet",
   walletHint: "One account across Arbitrum, Base, Ethereum — no seed phrase.",
+  walletHintWeb3: "Universal Account or any Web3 wallet. You sign a message — we never see your keys.",
   terms: "By continuing you accept our Terms and Privacy Policy.",
+  termsWeb3: "On-chain care hub. Identity = your wallet. Payments settle on Arbitrum.",
   hasAccount: "Already signed in before?",
 };
 

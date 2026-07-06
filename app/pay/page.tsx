@@ -20,7 +20,7 @@ import {
   type NeedType,
 } from "@/lib/allowances";
 import { slideForward, slideBack } from "@/lib/motion";
-import { send, actions, fees } from "@/lib/copy";
+import { send, actions, fees, settlement } from "@/lib/copy";
 import { useLuminaUA } from "@/app/providers/UniversalAccountProvider";
 import { settlementPaymentFields, type SettlementResult } from "@/lib/settlement";
 
@@ -40,6 +40,7 @@ export default function PayPage() {
   const [showBio, setShowBio] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [lastSettlement, setLastSettlement] = useState<SettlementResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const family = getFamily().filter(
     (m) =>
@@ -80,10 +81,11 @@ export default function PayPage() {
   const onBioConfirm = async () => {
     if (!member) return;
     setShowBio(false);
+    setErrorMsg(null);
     setProcessing(true);
     const result = await settle(numAmount);
     setLastSettlement(result);
-    createManualPayment({
+    const payment = await createManualPayment({
       memberId: member.id,
       needType,
       amount: numAmount,
@@ -91,6 +93,10 @@ export default function PayPage() {
     });
     void refreshBalance();
     setProcessing(false);
+    if (!payment) {
+      setErrorMsg(settlement.failed);
+      return;
+    }
     setStep("done");
   };
 
@@ -259,7 +265,9 @@ export default function PayPage() {
               className="space-y-4"
             >
               {processing ? (
-                <ProcessingOverlay label={send.sending(member.relation)} className="py-16" />
+                <ProcessingOverlay label={settlement.confirming} className="py-16" />
+              ) : errorMsg ? (
+                <p className="text-sm font-medium text-negative text-center py-8">{errorMsg}</p>
               ) : (
                 <div className="card-bordered space-y-4 pay-review-card">
                   <p className="pay-review-eyebrow">{send.reviewEyebrow}</p>
