@@ -22,6 +22,8 @@ import PageLoading from "@/components/PageLoading";
 import PageEnter from "@/components/PageEnter";
 import FamilyPortalCard from "@/components/FamilyPortalCard";
 import IpfsGraphProof from "@/components/IpfsGraphProof";
+import CareCompass from "@/components/CareCompass";
+import MagicMoment from "@/components/MagicMoment";
 import { StaggerList, StaggerItem } from "@/components/StaggerList";
 
 import { getStoredUser, isOnboarded } from "@/lib/auth";
@@ -286,6 +288,12 @@ export default function DashboardPage() {
 
         <QuickActions pendingCount={pending.length} variant="row" />
 
+        {isMagicMode && (
+          <section className="section-block">
+            <CareCompass isMagicMode />
+          </section>
+        )}
+
         {pending.length === 0 ? (
           <section className="section-block">
             <SectionHead eyebrow={home.portalEyebrow} title={home.portalTitle} />
@@ -374,6 +382,7 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
+      <MagicMoment ready={ready} />
       <BottomNav />
     </>
   );

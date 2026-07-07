@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import PaymentSuccessPanel from "@/components/PaymentSuccessPanel";
 import ProcessingOverlay from "@/components/ProcessingOverlay";
@@ -28,8 +28,9 @@ type Step = "who" | "amount" | "review" | "done";
 
 const NEED_TYPES = Object.keys(NEED_META) as NeedType[];
 
-export default function PayPage() {
+function PayPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { settle, refreshBalance } = useLuminaUA();
   const [ready, setReady] = useState(false);
   const [step, setStep] = useState<Step>("who");
@@ -56,8 +57,13 @@ export default function PayPage() {
       router.replace("/login");
       return;
     }
+    const preAmount = searchParams.get("amount");
+    const preNeed = searchParams.get("need") as NeedType | null;
+    if (preAmount) setAmount(preAmount);
+    if (preNeed && NEED_TYPES.includes(preNeed)) setNeedType(preNeed);
+    if (preAmount) setStep("who");
     setReady(true);
-  }, [router]);
+  }, [router, searchParams]);
 
   const goBack = () => {
     const prev: Record<Step, Step | "exit"> = {
@@ -324,5 +330,13 @@ export default function PayPage() {
         recipient={member ? member.name : undefined}
       />
     </>
+  );
+}
+
+export default function PayPage() {
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <PayPageContent />
+    </Suspense>
   );
 }

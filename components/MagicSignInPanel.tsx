@@ -13,6 +13,7 @@ import { getPostLoginPath } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/copy";
 import { isAppleMobile } from "@/lib/particle-auth";
+import { markMagicMomentPending } from "@/lib/magic-moment";
 
 type MagicSignInPanelProps = {
   disabled?: boolean;
@@ -87,7 +88,10 @@ export default function MagicSignInPanel({ disabled }: MagicSignInPanelProps) {
         return;
       }
       const ok = await completeMagicSession(didToken);
-      if (ok) router.replace(getPostLoginPath());
+      if (ok) {
+        markMagicMomentPending();
+        router.replace(getPostLoginPath());
+      }
       else setError("Could not finish sign-in");
     } catch {
       setError("Email sign-in failed");

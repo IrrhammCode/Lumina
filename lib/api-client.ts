@@ -80,6 +80,19 @@ export const api = {
     );
   },
 
+  careCompass(query: string, familyContext?: string) {
+    return apiFetch<{
+      answer: string;
+      sources: { title: string; url: string }[];
+      suggestedAmounts: number[];
+      poweredBy: "tavily" | "curated";
+      tavilyConfigured: boolean;
+    }>("/api/care/compass", {
+      method: "POST",
+      body: JSON.stringify({ query, familyContext }),
+    });
+  },
+
   getSession() {
     return apiFetch<{ user: LuminaUser & { portalToken?: string; onboarded?: boolean } }>(
       "/api/auth/session"

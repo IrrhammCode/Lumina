@@ -10,23 +10,30 @@ import PageLoading from "@/components/PageLoading";
 import { getStoredUser, setOnboarded } from "@/lib/auth";
 import { api } from "@/lib/api-client";
 import { hasParticleConfig } from "@/lib/particle-config";
+import { hasMagicConfig } from "@/lib/magic-config";
 import { slideForward, slideBack, fadeScale } from "@/lib/motion";
 import { defaultFamily, getFamily, setFamily, type FamilyMember } from "@/lib/family";
 import { onboarding, family, portal } from "@/lib/copy";
 import MemberAvatar from "@/components/MemberAvatar";
 import FamilyPortalCard from "@/components/FamilyPortalCard";
+import OnboardingPledge from "./OnboardingPledge";
 
 const OnboardingWalletStep = dynamic(() => import("./OnboardingWalletStep"), { ssr: false });
+const OnboardingMagicWalletStep = dynamic(() => import("./OnboardingMagicWalletStep"), { ssr: false });
 
 type Step = "welcome" | "wallet" | "family" | "ready";
 const SUGGESTED = defaultFamily.slice(0, 3);
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const isUaOnboarding = hasParticleConfig();
+  const isMagicOnboarding = hasMagicConfig();
+  const isUaOnboarding = hasParticleConfig() && !isMagicOnboarding;
   const stepOrder = useMemo<Step[]>(
-    () => (isUaOnboarding ? ["welcome", "wallet", "family", "ready"] : ["welcome", "family", "ready"]),
-    [isUaOnboarding]
+    () =>
+      isMagicOnboarding || isUaOnboarding
+        ? ["welcome", "wallet", "family", "ready"]
+        : ["welcome", "family", "ready"],
+    [isMagicOnboarding, isUaOnboarding]
   );
 
   const [ready, setReady] = useState(false);
@@ -45,7 +52,11 @@ export default function OnboardingPage() {
   }, [router]);
 
   const stepIndex = stepOrder.indexOf(step);
-  const perks = isUaOnboarding ? onboarding.perksUa : onboarding.perks;
+  const perks = isMagicOnboarding
+    ? onboarding.perksMagic
+    : isUaOnboarding
+      ? onboarding.perksUa
+      : onboarding.perks;
 
   const toggleMember = (id: string) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -92,14 +103,14 @@ export default function OnboardingPage() {
 
   const titles: Record<Step, string> = {
     welcome: onboarding.welcomeTitle,
-    wallet: onboarding.walletTitle,
+    wallet: isMagicOnboarding ? onboarding.magicWalletHeadline : onboarding.walletTitle,
     family: onboarding.familySub,
     ready: onboarding.readyTitle,
   };
 
   const subs: Record<Step, string> = {
     welcome: onboarding.welcomeSub,
-    wallet: onboarding.walletSub,
+    wallet: isMagicOnboarding ? onboarding.magicWalletSub : onboarding.walletSub,
     family: "",
     ready: onboarding.readySub(selected.length || SUGGESTED.length),
   };
@@ -128,7 +139,13 @@ export default function OnboardingPage() {
       title={titles[step]}
       subtitle={subs[step] || undefined}
       step={stepIndex}
-      stepLabels={isUaOnboarding ? onboarding.stepsUa : onboarding.steps}
+      stepLabels={
+        isMagicOnboarding
+          ? onboarding.stepsMagic
+          : isUaOnboarding
+            ? onboarding.stepsUa
+            : onboarding.steps
+      }
       onBack={goBack}
       footer={footer}
       panel={step === "welcome" || step === "ready" || step === "wallet"}
@@ -150,8 +167,13 @@ export default function OnboardingPage() {
             </div>
           </motion.div>
         )}
+        {step === "wallet" && isMagicOnboarding && (
+          <motion.div key="wallet-magic" variants={slideForward} initial="initial" animate="animate" exit="exit">
+            <OnboardingMagicWalletStep />
+          </motion.div>
+        )}
         {step === "wallet" && isUaOnboarding && (
-          <motion.div key="wallet" variants={slideForward} initial="initial" animate="animate" exit="exit">
+          <motion.div key="wallet-ua" variants={slideForward} initial="initial" animate="animate" exit="exit">
             <OnboardingWalletStep />
           </motion.div>
         )}
@@ -203,6 +225,11 @@ export default function OnboardingPage() {
                 ))}
               </ul>
             </div>
+            <OnboardingPledge
+              familyNames={getFamily()
+                .filter((m) => selected.includes(m.id))
+                .map((m) => m.name)}
+            />
             <div className="onboard-portal-slot">
               <p className="field-label">{portal.title}</p>
               <p className="text-caption text-xs">{portal.onboardingHint}</p>

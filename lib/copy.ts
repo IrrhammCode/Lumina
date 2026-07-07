@@ -423,10 +423,40 @@ export const family = {
   portalHint: "Share their personal link so they can ask from home.",
 };
 
+export const compass = {
+  eyebrow: "AI care advisor",
+  title: "Care Compass",
+  sub: "Ask what to send — Tavily researches, your Magic wallet sends.",
+  placeholder: "How much pulsa does mom need?",
+  prompts: [
+    "Pulsa budget for mom?",
+    "School fees this term?",
+    "Medicine emergency fund?",
+  ],
+  searching: "Researching care costs…",
+  sendLabel: "Send with Magic wallet",
+  poweredTavily: "Powered by Tavily AI",
+  poweredCurated: "Curated care tips · add TAVILY_API_KEY for live research",
+};
+
+export const magicMoment = {
+  title: "Your care wallet is ready",
+  sub: "You signed in like any modern app — no seed phrase, no browser extension.",
+  careId: "Care ID",
+  pending: "Creating…",
+  perks: [
+    "Family asks → you tap approve",
+    "Magic wallet signs invisibly behind Face ID",
+    "Proof lands on IPFS, tied to your wallet",
+  ],
+  cta: "Start caring",
+};
+
 export const onboarding = {
   brand: "Set up",
   steps: ["Start", "Family", "Done"],
   stepsUa: ["Start", "Wallet", "Family", "Done"],
+  stepsMagic: ["Start", "Wallet", "Family", "Done"],
   welcomeTitle: "Who are you sending for?",
   welcomeSub: "Lumina covers family back home — when they ask, or on a schedule you set.",
   perks: [
@@ -439,6 +469,22 @@ export const onboarding = {
     "Cross-chain USDT when you approve a request",
     "EIP-7702 smart account — no seed phrase",
   ],
+  perksMagic: [
+    "Google or Apple sign-in — wallet created invisibly",
+    "Care Compass AI suggests what to send",
+    "Approve family requests with one tap + Magic sign",
+  ],
+  magicWalletBadge: "Magic embedded wallet",
+  magicWalletHeadline: "Already done — no setup needed",
+  magicWalletSub: "Your care wallet was created the moment you signed in. Same flow as Cash App or Revolut.",
+  magicWalletIdLabel: "Your Care ID",
+  magicWalletWaiting: "Preparing your care wallet…",
+  magicWalletDemo: "Demo mode — wallet appears after Magic sign-in.",
+  pledgeTitle: "Sign your care commitment",
+  pledgeSub: "A personal signature with your Magic wallet — optional, takes 2 seconds.",
+  pledgeCta: "Sign with Magic wallet",
+  pledgeDone: "Care commitment signed",
+  pledgeSkip: "Skip for now",
   walletTitle: "Connect your account",
   walletSub: "Liquidity from any chain settles on Arbitrum when you send.",
   walletConnect: "Connect with Particle",

@@ -8,6 +8,7 @@ import { api } from "@/lib/api-client";
 import { loginAndHydrate } from "@/lib/sync";
 import { getPostLoginPath } from "@/lib/auth";
 import { auth } from "@/lib/copy";
+import { markMagicMomentPending } from "@/lib/magic-moment";
 
 export default function MagicOAuthCallbackPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function MagicOAuthCallbackPage() {
       }
 
       await loginAndHydrate(verified.data.user);
+      markMagicMomentPending();
       router.replace(getPostLoginPath());
     })();
   }, [router]);
