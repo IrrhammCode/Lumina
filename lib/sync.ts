@@ -48,6 +48,7 @@ export function applyUserDataToCache(data: {
   requests: import("./requests").CareRequest[];
   rules: import("./allowances").AllowanceRule[];
   payments: import("./allowances").PaymentRecord[];
+  carePledgeRef?: string;
 }): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(PREFS_KEY, JSON.stringify(data.prefs));
@@ -58,6 +59,9 @@ export function applyUserDataToCache(data: {
   localStorage.setItem(SEEDED_KEY, "1");
   localStorage.setItem(REQUESTS_SEEDED, "1");
   localStorage.setItem(SERVER_BACKED_KEY, "1");
+  if (data.carePledgeRef) {
+    localStorage.setItem("lumina:care-pledge", data.carePledgeRef);
+  }
 }
 
 export async function hydrateFromServer(): Promise<boolean> {

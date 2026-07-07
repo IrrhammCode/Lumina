@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, PenLine, Check } from "lucide-react";
 import { hasMagicConfig } from "@/lib/magic-config";
+import { api } from "@/lib/api-client";
 import { signCarePledge, storePledgeRef, getStoredPledgeRef } from "@/lib/magic-pledge";
 import { onboarding } from "@/lib/copy";
 
@@ -30,6 +31,8 @@ export default function OnboardingPledge({ familyNames }: OnboardingPledgeProps)
     const sig = await signCarePledge(familyNames);
     if (sig) {
       storePledgeRef(sig);
+      const ref = getStoredPledgeRef();
+      if (ref) await api.saveCarePledge(ref, sig);
       setSigned(true);
     }
     setLoading(false);

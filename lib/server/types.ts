@@ -20,6 +20,7 @@ export type UserRecord = {
   payments: PaymentRecord[];
   seeded: boolean;
   graphCid?: string;
+  carePledgeRef?: string;
 };
 
 export type OtpRecord = {
@@ -64,4 +65,5 @@ export type UserDataSnapshot = {
   requests: CareRequest[];
   rules: AllowanceRule[];
   payments: PaymentRecord[];
+  carePledgeRef?: string;
 };

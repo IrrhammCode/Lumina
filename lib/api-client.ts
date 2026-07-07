@@ -112,7 +112,15 @@ export const api = {
       payments: PaymentRecord[];
       storage?: "ipfs" | "json" | "postgres";
       graphCid?: string;
+      carePledgeRef?: string;
     }>("/api/user/data");
+  },
+
+  saveCarePledge(pledgeRef: string, signature: string) {
+    return apiFetch<{ carePledgeRef: string }>("/api/user/pledge", {
+      method: "POST",
+      body: JSON.stringify({ pledgeRef, signature }),
+    });
   },
 
   rotatePortalToken() {

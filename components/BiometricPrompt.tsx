@@ -7,6 +7,7 @@ import { sheetBackdrop, sheetPanel, springSnappy, tweenBase } from "@/lib/motion
 import { bio } from "@/lib/copy";
 import { getPrefs } from "@/lib/prefs";
 import { hasParticleConfig } from "@/lib/particle-config";
+import { hasMagicConfig } from "@/lib/magic-config";
 import { useLuminaUA } from "@/app/providers/UniversalAccountProvider";
 import { Sparkles } from "lucide-react";
 
@@ -44,11 +45,11 @@ export default function BiometricPrompt({
   const biometricEnabled = isOpen ? getPrefs().biometricEnabled : true;
   const settlementHint = isMagicMode
     ? bio.magicHint
-    : hasParticleConfig()
-      ? isUaMode
-        ? bio.uaHint
-        : bio.demoHint
-      : undefined;
+    : hasParticleConfig() && isUaMode
+      ? bio.uaHint
+      : hasMagicConfig()
+        ? bio.magicHint
+        : undefined;
 
   useEffect(() => {
     if (!isOpen) return;

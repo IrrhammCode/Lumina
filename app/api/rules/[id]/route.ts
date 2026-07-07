@@ -1,8 +1,9 @@
 import type { NextRequest } from "next/server";
-import type { AllowanceRule, PaymentRecord } from "@/lib/allowances";
+import type { AllowanceRule } from "@/lib/allowances";
 import { computeNextRunAt } from "@/lib/allowances";
 import { isSession, jsonError, jsonOk, parseJsonBody, requireSession } from "@/lib/server/api-utils";
-import { addPayment, deleteRule, getUserData, upsertRule } from "@/lib/server/user-data";
+import { deleteRule, getUserData, upsertRule } from "@/lib/server/user-data";
+import { verifyAndRecordSettlement } from "@/lib/server/settlements";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -13,6 +14,7 @@ type PatchBody = {
     settlementRef?: string;
     settlementExplorerUrl?: string;
     settlementMode?: "ua" | "demo" | "magic";
+    txHash?: string;
   };
 };
 
@@ -52,36 +54,37 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   if (body?.action === "execute") {
-    const member = user.family.find((m) => m.id === existing.memberId);
-    if (!member) return jsonError("Member not found", 404);
+    if (!body.settlement?.settlementRef) {
+      return jsonError("On-chain settlement is required");
+    }
 
-    const payment: PaymentRecord = {
-      id: `pay_${Date.now()}`,
+    const mode = body.settlement.settlementMode ?? "magic";
+    const result = await verifyAndRecordSettlement(session.sub, {
       ruleId: existing.id,
-      ruleLabel: existing.label,
-      memberId: member.id,
-      memberName: member.name,
-      countryCode: member.countryCode,
+      memberId: existing.memberId,
       needType: existing.needType,
+      kind: "auto",
       amount: existing.amount,
-      type: "auto",
-      status: "completed",
-      date: new Date().toISOString(),
-      settlementRef: body.settlement?.settlementRef ?? `0x${Math.random().toString(16).slice(2, 10)}…arb`,
-      settlementExplorerUrl: body.settlement?.settlementExplorerUrl,
-      settlementMode: body.settlement?.settlementMode ?? (body.settlement?.settlementExplorerUrl ? "ua" : "demo"),
-    };
+      settlementRef: body.settlement.settlementRef,
+      explorerUrl: body.settlement.settlementExplorerUrl,
+      settlementMode: mode,
+      txHash:
+        body.settlement.txHash ??
+        (mode === "magic" ? body.settlement.settlementRef : undefined),
+    });
 
-    await addPayment(session.sub, payment);
+    if (result.status === "failed") {
+      return jsonError(result.reason ?? "Settlement verification failed", 400);
+    }
 
     const rule: AllowanceRule = {
       ...existing,
-      lastRunAt: payment.date,
+      lastRunAt: result.payment?.date ?? new Date().toISOString(),
       nextRunAt: computeNextRunAt(existing.schedule),
     };
     await upsertRule(session.sub, rule);
 
-    return jsonOk({ rule, payment });
+    return jsonOk({ rule, payment: result.payment, status: result.status });
   }
 
   if (body?.rule) {

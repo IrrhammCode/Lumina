@@ -25,6 +25,7 @@ export async function getSnapshot(userId: string): Promise<UserDataSnapshot | nu
     requests: user.requests,
     rules: user.rules,
     payments: user.payments,
+    carePledgeRef: user.carePledgeRef,
   };
 }
 

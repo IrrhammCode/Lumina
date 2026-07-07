@@ -61,7 +61,7 @@ export default function OnboardingMagicWalletStep() {
             </div>
           </div>
         ) : (
-          <p className="text-caption text-xs text-center">{onboarding.magicWalletDemo}</p>
+          <p className="text-caption text-xs text-center">{onboarding.magicWalletWaitingConnect}</p>
         )}
       </motion.div>
     </motion.div>

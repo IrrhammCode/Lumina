@@ -26,6 +26,8 @@ import CareCompass from "@/components/CareCompass";
 import MagicMoment from "@/components/MagicMoment";
 import MagicCareCard from "@/components/MagicCareCard";
 import MagicFirstSendBanner from "@/components/MagicFirstSendBanner";
+import MagicFundBanner from "@/components/MagicFundBanner";
+import EmptyInbox from "@/components/EmptyInbox";
 import { StaggerList, StaggerItem } from "@/components/StaggerList";
 
 import { getStoredUser, isOnboarded } from "@/lib/auth";
@@ -294,6 +296,8 @@ export default function DashboardPage() {
 
         <QuickActions pendingCount={pending.length} variant="row" />
 
+        {isMagicMode && <MagicFundBanner />}
+
         {isMagicMode && (
           <MagicFirstSendBanner paymentCount={stats.count} />
         )}
@@ -307,6 +311,12 @@ export default function DashboardPage() {
         {isMagicMode && (
           <section className="section-block">
             <CareCompass isMagicMode />
+          </section>
+        )}
+
+        {pending.length === 0 && (
+          <section className="section-block">
+            <EmptyInbox />
           </section>
         )}
 

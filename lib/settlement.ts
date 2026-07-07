@@ -37,7 +37,7 @@ export function paymentToSettlement(payment: {
     ref: payment.settlementRef,
     explorerUrl: payment.settlementExplorerUrl,
     txHash: payment.settlementMode === "magic" ? payment.settlementRef : undefined,
-    mode: payment.settlementMode ?? (payment.settlementExplorerUrl ? "ua" : "demo"),
+    mode: payment.settlementMode ?? (payment.settlementExplorerUrl ? "ua" : "magic"),
   };
 }
 

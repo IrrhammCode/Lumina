@@ -66,6 +66,8 @@ export const pull = {
   approveFull: (amount: number) => `Approve & send $${amount}`,
   seeAll: (n: number) => `All requests (${n})`,
   emptyPending: "Nothing waiting. When family asks, it shows up here.",
+  emptyInboxSub: "Share your family portal link so they can request care from home.",
+  emptyInboxCta: "Share family portal",
   emptyPaid: "No approved requests yet.",
   emptyDeclined: "No passed requests yet.",
   detailTitle: "Request",
@@ -452,6 +454,14 @@ export const magicCard = {
   signedIn: (via: string) => `Signed in with ${via}`,
 };
 
+export const magicFund = {
+  title: "Fund your care wallet",
+  subUsdt: "Add USDT on Arbitrum to send care payments.",
+  subGas: "Add a little ETH on Arbitrum for transaction gas.",
+  subBoth: "Add USDT + a small amount of ETH on Arbitrum to send care.",
+  bridge: "Bridge to Arbitrum",
+};
+
 export const magicFirstSend = {
   title: "Send your first care",
   sub: "Face ID → Magic signs → family sees proof in ~10s",
@@ -498,7 +508,7 @@ export const onboarding = {
   magicWalletSub: "Your care wallet was created the moment you signed in. Same flow as Cash App or Revolut.",
   magicWalletIdLabel: "Your Care ID",
   magicWalletWaiting: "Preparing your care wallet…",
-  magicWalletDemo: "Demo mode — wallet appears after Magic sign-in.",
+  magicWalletWaitingConnect: "Sign in with Google or Apple to create your care wallet.",
   pledgeTitle: "Sign your care commitment",
   pledgeSub: "A personal signature with your Magic wallet — optional, takes 2 seconds.",
   pledgeCta: "Sign with Magic wallet",
