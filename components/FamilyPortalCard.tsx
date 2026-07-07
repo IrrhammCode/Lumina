@@ -6,7 +6,7 @@ import { Copy, Share2, ExternalLink, Link2, Check, RefreshCw } from "lucide-reac
 import { useRouter } from "next/navigation";
 import LuminaLogo from "@/components/LuminaLogo";
 import MemberAvatar from "@/components/MemberAvatar";
-import { useAccount } from "@particle-network/connectkit";
+import { useLuminaUA } from "@/app/providers/UniversalAccountProvider";
 import {
   buildSignedPortalUrl,
   copyPortalUrl,
@@ -25,7 +25,7 @@ type FamilyPortalCardProps = {
 
 export default function FamilyPortalCard({ variant = "card", memberId: initialMemberId }: FamilyPortalCardProps) {
   const router = useRouter();
-  const { connector } = useAccount();
+  const { connector } = useLuminaUA();
   const [copied, setCopied] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);

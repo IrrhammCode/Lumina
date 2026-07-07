@@ -15,6 +15,8 @@ import { loginAndHydrate } from "@/lib/sync";
 import { signSiweMessage } from "@/lib/siwe-client";
 import { connectInjectedWallet, signInjectedMessage } from "@/lib/injected-wallet";
 import { hasParticleConfig } from "@/lib/particle-config";
+import { hasMagicConfig } from "@/lib/magic-config";
+import MagicLogin from "./MagicLogin";
 import { useConnectKitReady, useConnectKitStatus } from "@/app/providers/ParticleProvider";
 import { preloadConnectKit } from "@/lib/connectkit-preload";
 
@@ -237,6 +239,8 @@ function WalletLoginInjected() {
 }
 
 export default function WalletLogin() {
+  if (hasMagicConfig()) return <MagicLogin />;
+
   const particleEnabled = hasParticleConfig();
   const connectKitReady = useConnectKitReady();
 

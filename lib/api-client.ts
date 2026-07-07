@@ -73,6 +73,13 @@ export const api = {
     );
   },
 
+  magicVerify(didToken: string) {
+    return apiFetch<{ user: LuminaUser & { portalToken?: string; onboarded?: boolean } }>(
+      "/api/auth/magic/verify",
+      { method: "POST", body: JSON.stringify({ didToken }) }
+    );
+  },
+
   getSession() {
     return apiFetch<{ user: LuminaUser & { portalToken?: string; onboarded?: boolean } }>(
       "/api/auth/session"

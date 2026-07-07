@@ -33,6 +33,7 @@ export const home = {
   heroSubPending: brand.tagline,
   balanceLabel: "Available to send",
   balanceUaLabel: "Unified balance",
+  balanceMagicLabel: "Care wallet",
   sentMonth: "Sent this month",
   payments: "Payments",
   awaiting: "Needs your OK",
@@ -466,7 +467,7 @@ export const onboarding = {
 export const auth = {
   signIn: "Create account",
   badge: "Secure",
-  signInSub: "Continue with Google or Apple — same as any app you trust.",
+  signInSub: "Google, Apple, or email — Magic creates your wallet invisibly.",
   signInSubWeb3: "Sign in with your wallet — no email, no password.",
   googleCta: "Continue with Google",
   appleCta: "Continue with Apple",
@@ -474,6 +475,9 @@ export const auth = {
   orDivider: "or",
   walletSecondary: "Use an existing crypto wallet",
   web2Footnote: "We create a secure wallet behind the scenes — no seed phrase to remember.",
+  magicBadge: "Magic embedded wallet · invisible to you",
+  magicFootnote: "No seed phrase. Magic creates your wallet when you sign in — same as Cash App or Revolut.",
+  magicSigningIn: "Finishing sign-in…",
   otpTitle: "Check your inbox",
   otpSub: (email: string) => `We sent a code to ${email}`,
   otpHint: "Enter the 6-digit code we sent",
@@ -495,7 +499,7 @@ export const auth = {
 };
 
 export const welcome = {
-  trust: "Sign in with Google or Apple · wallet secured for you",
+  trust: "Magic wallet · Google or Apple sign-in",
   features: [
     "School fees & bills — requested from home",
     "Autopilot for pulsa and recurring care",

@@ -3,6 +3,8 @@ import { getPayments } from "./allowances";
 import type { LuminaUser } from "./auth";
 import { cacheUser, setOnboardedFromServer } from "./auth";
 import { clearGraphMeta, saveGraphMeta } from "./graph-meta";
+import { hasMagicConfig } from "./magic-config";
+import { getMagicDidToken, isMagicLoggedIn, logoutMagic } from "./magic";
 import { emitNewRequest } from "./events";
 import { notifyAutopilotQueue, notifyNewRequest } from "./notifications";
 import { getPendingRequests, getRequests, type CareRequest } from "./requests";
@@ -108,9 +110,29 @@ export async function loginAndHydrate(
 ): Promise<void> {
   persistAuthUser(user);
   await hydrateFromServer();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("lumina:login"));
+  }
 }
 
 export async function restoreSession(): Promise<LuminaUser | null> {
+  if (hasMagicConfig() && (await isMagicLoggedIn())) {
+    const didToken = await getMagicDidToken();
+    if (didToken) {
+      const magic = await api.magicVerify(didToken);
+      if (magic.ok) {
+        persistAuthUser(magic.data.user);
+        await hydrateFromServer();
+        return {
+          email: magic.data.user.email,
+          loggedIn: true,
+          walletAddress: magic.data.user.walletAddress,
+          portalToken: magic.data.user.portalToken,
+        };
+      }
+    }
+  }
+
   const result = await api.getSession();
   if (!result.ok) return null;
   persistAuthUser(result.data.user);
@@ -125,6 +147,9 @@ export async function restoreSession(): Promise<LuminaUser | null> {
 
 export async function logoutFromServer(): Promise<void> {
   await api.logout();
+  if (hasMagicConfig()) {
+    await logoutMagic();
+  }
   if (typeof window !== "undefined") {
     localStorage.removeItem(SERVER_BACKED_KEY);
     clearGraphMeta();

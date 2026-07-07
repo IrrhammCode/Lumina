@@ -16,6 +16,7 @@ import {
 } from "@/lib/universal-account";
 import type { IAssetsResponse, UniversalAccount } from "@/lib/ua-sdk";
 import { settleCarePayment, type SettlementResult } from "@/lib/settlement";
+import { useMagicWallet } from "./MagicWalletProvider";
 
 export type SmartAccountInfo = {
   ownerAddress: string;
@@ -32,6 +33,8 @@ type UAContextValue = {
   balanceUsd: number | null;
   accountInfo: SmartAccountInfo | null;
   isUaMode: boolean;
+  isMagicMode: boolean;
+  connector: any;
   settle: (amount: number) => Promise<SettlementResult>;
   refreshBalance: () => Promise<void>;
 };
@@ -43,6 +46,8 @@ const demoValue: UAContextValue = {
   balanceUsd: null,
   accountInfo: null,
   isUaMode: false,
+  isMagicMode: false,
+  connector: null,
   settle: (amount) => settleCarePayment({ amount }),
   refreshBalance: async () => {},
 };
@@ -50,7 +55,25 @@ const demoValue: UAContextValue = {
 const UAContext = createContext<UAContextValue>(demoValue);
 
 export function useLuminaUA(): UAContextValue {
-  return useContext(UAContext);
+  const magic = useMagicWallet();
+  const particle = useContext(UAContext);
+  if (magic.isMagicMode) {
+    return {
+      ready: magic.ready,
+      ua: null,
+      balance: null,
+      balanceUsd: null,
+      accountInfo: null,
+      isUaMode: false,
+      isMagicMode: true,
+      connector: null,
+      settle: magic.settle,
+      refreshBalance: async () => {
+        await magic.refresh();
+      },
+    };
+  }
+  return particle;
 }
 
 export default function UniversalAccountProvider({
@@ -126,6 +149,8 @@ export default function UniversalAccountProvider({
       balanceUsd: balance?.totalAmountInUSD ?? null,
       accountInfo,
       isUaMode: !!ua && !!connector,
+      isMagicMode: false,
+      connector,
       settle,
       refreshBalance,
     }),

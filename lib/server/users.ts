@@ -16,6 +16,41 @@ export function walletEmail(address: string): string {
   return `${a.slice(0, 6)}…${a.slice(-4)}@wallet`;
 }
 
+function magicProviderFromOAuth(oauth?: string | null): UserRecord["provider"] {
+  if (oauth === "google") return "google";
+  if (oauth === "apple") return "apple";
+  return "magic";
+}
+
+export async function findOrCreateUserByMagic(input: {
+  walletAddress: string;
+  email: string;
+  oauthProvider?: string | null;
+}): Promise<UserRecord> {
+  const normalized = normalizeWallet(input.walletAddress);
+  const existing = await getUserByWallet(normalized);
+  if (existing) {
+    if (input.email && existing.email.endsWith("@wallet")) {
+      return upsertUser({ ...existing, email: input.email, provider: magicProviderFromOAuth(input.oauthProvider) });
+    }
+    return existing;
+  }
+
+  const user: UserRecord = {
+    id: createUserId(),
+    email: input.email,
+    walletAddress: normalized,
+    provider: magicProviderFromOAuth(input.oauthProvider),
+    onboarded: false,
+    portalToken: createPortalToken(),
+    createdAt: new Date().toISOString(),
+    prefs: { ...DEFAULT_PREFS },
+    ...buildDemoSeed(),
+  };
+
+  return upsertUser(user);
+}
+
 export async function findOrCreateUserByWallet(walletAddress: string): Promise<UserRecord> {
   const normalized = normalizeWallet(walletAddress);
   const existing = await getUserByWallet(normalized);

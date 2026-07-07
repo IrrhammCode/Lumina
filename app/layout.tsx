@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { meta } from "@/lib/copy";
 import "./globals.css";
 import ParticleProvider from "./providers/ParticleProvider";
+import MagicWalletProvider from "./providers/MagicWalletProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,7 +37,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <body className="font-sans min-h-dvh bg-canvas-soft text-ink antialiased">
-        <ParticleProvider>{children}</ParticleProvider>
+        <MagicWalletProvider>
+          <ParticleProvider>{children}</ParticleProvider>
+        </MagicWalletProvider>
       </body>
     </html>
   );

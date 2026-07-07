@@ -46,7 +46,7 @@ import { getPrefs } from "@/lib/prefs";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { balanceUsd, isUaMode, accountInfo, settle, refreshBalance } = useLuminaUA();
+  const { balanceUsd, isUaMode, isMagicMode, accountInfo, settle, refreshBalance } = useLuminaUA();
   const [userName, setUserName] = useState("there");
   const [ready, setReady] = useState(false);
   const [rules, setRules] = useState<AllowanceRule[]>([]);
@@ -219,8 +219,18 @@ export default function DashboardPage() {
   const floating = (
     <BalanceCard
       balance={formatUnifiedBalance(balanceUsd, stats.total)}
-      balanceLabel={isUaMode ? home.balanceUaLabel : home.balanceLabel}
-      accountBadge={isUaMode ? (accountInfo?.useEIP7702 ? "EIP-7702 · Universal" : "Universal Account") : undefined}
+      balanceLabel={
+        isUaMode ? home.balanceUaLabel : isMagicMode ? home.balanceMagicLabel : home.balanceLabel
+      }
+      accountBadge={
+        isMagicMode
+          ? "Magic wallet"
+          : isUaMode
+            ? accountInfo?.useEIP7702
+              ? "EIP-7702 · Universal"
+              : "Universal Account"
+            : undefined
+      }
       extraBadge={<IpfsGraphProof variant="badge" />}
       visible={balanceVisible}
       onToggle={() => setBalanceVisible(!balanceVisible)}

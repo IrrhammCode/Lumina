@@ -11,6 +11,7 @@ import React, {
 import SessionHydrator from "@/components/SessionHydrator";
 import { hasParticleConfig } from "@/lib/particle-config";
 
+
 type ConnectKitStatus = {
   ready: boolean;
   loading: boolean;

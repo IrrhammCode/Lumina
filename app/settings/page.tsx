@@ -21,8 +21,10 @@ import FamilyPortalCard from "@/components/FamilyPortalCard";
 import IpfsGraphProof from "@/components/IpfsGraphProof";
 import UADevPanel from "@/components/UADevPanel";
 import { hasParticleConfig } from "@/lib/particle-config";
+import { hasMagicConfig } from "@/lib/magic-config";
 
 const ParticleLogoutButton = dynamic(() => import("@/components/ParticleLogoutButton"), { ssr: false });
+const MagicLogoutButton = dynamic(() => import("@/components/MagicLogoutButton"), { ssr: false });
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -163,7 +165,9 @@ export default function SettingsPage() {
           </AnimatePresence>
         </div>
 
-        {hasParticleConfig() ? (
+        {hasMagicConfig() ? (
+          <MagicLogoutButton onDone={() => router.push("/")} />
+        ) : hasParticleConfig() ? (
           <ParticleLogoutButton onDone={() => router.push("/")} />
         ) : (
           <button

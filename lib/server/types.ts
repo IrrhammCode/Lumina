@@ -3,7 +3,7 @@ import type { FamilyMember } from "@/lib/family";
 import type { LuminaPrefs } from "@/lib/prefs";
 import type { CareRequest } from "@/lib/requests";
 
-export type AuthProvider = "wallet";
+export type AuthProvider = "wallet" | "google" | "apple" | "email" | "magic";
 
 export type UserRecord = {
   id: string;
