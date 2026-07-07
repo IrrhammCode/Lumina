@@ -13,7 +13,7 @@ export default function PageEnter({
   return (
     <motion.div
       variants={pageEnter}
-      initial="hidden"
+      initial={false}
       animate="show"
       className={className}
     >

@@ -35,14 +35,14 @@ export default function WelcomePage() {
       }
     >
       <motion.p
-        initial={{ opacity: 0 }}
+        initial={false}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.15 }}
         className="welcome-trust-pill"
       >
         {welcome.trust}
       </motion.p>
-      <motion.div variants={staggerContainer} initial="hidden" animate="show" className="auth-feature-grid">
+      <motion.div variants={staggerContainer} initial={false} animate="show" className="auth-feature-grid">
         {welcome.features.map((text, i) => {
           const Icon = FEATURE_ICONS[i];
           return (

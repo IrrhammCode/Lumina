@@ -5,7 +5,7 @@ import { pageEnter } from "@/lib/motion";
 
 export default function Template({ children }: { children: React.ReactNode }) {
   return (
-    <motion.div variants={pageEnter} initial="hidden" animate="show">
+    <motion.div variants={pageEnter} initial={false} animate="show">
       {children}
     </motion.div>
   );

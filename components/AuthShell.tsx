@@ -27,7 +27,7 @@ export default function AuthShell({
       <div className="auth-page">
         <div className="auth-brand-band">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             className="auth-brand-inner"
           >
@@ -75,7 +75,7 @@ export default function AuthShell({
       </header>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         className="auth-card-centered auth-card-login"
       >

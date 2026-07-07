@@ -1,38 +1,39 @@
 "use client";
 
-import React from "react";
-import dynamic from "next/dynamic";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import SessionHydrator from "@/components/SessionHydrator";
+import { hasParticleConfig } from "@/lib/particle-config";
 
-const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
-const clientKey = process.env.NEXT_PUBLIC_CLIENT_KEY;
-const appId = process.env.NEXT_PUBLIC_APP_ID;
+const ConnectKitReadyContext = createContext(false);
 
-const hasParticleConfig =
-  !!projectId &&
-  !!clientKey &&
-  !!appId &&
-  projectId !== "dummy_project_id" &&
-  clientKey !== "dummy_client_key" &&
-  appId !== "dummy_app_id";
-
-const ConnectKitProviderLazy = dynamic(
-  () => import("./ConnectKitProviderInner"),
-  { ssr: false }
-);
+export function useConnectKitReady(): boolean {
+  return useContext(ConnectKitReadyContext);
+}
 
 export default function ParticleProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  if (!hasParticleConfig) {
-    return <SessionHydrator>{children}</SessionHydrator>;
-  }
+  const particleEnabled = hasParticleConfig();
+  const [ConnectKit, setConnectKit] = useState<React.ComponentType<{
+    children: React.ReactNode;
+  }> | null>(null);
 
-  return (
-    <ConnectKitProviderLazy>
+  useEffect(() => {
+    if (!particleEnabled) return;
+    void import("./ConnectKitProviderInner")
+      .then((mod) => setConnectKit(() => mod.default))
+      .catch((err) => console.error("ConnectKit failed to load:", err));
+  }, [particleEnabled]);
+
+  const shell = (
+    <ConnectKitReadyContext.Provider value={Boolean(ConnectKit)}>
       <SessionHydrator>{children}</SessionHydrator>
-    </ConnectKitProviderLazy>
+    </ConnectKitReadyContext.Provider>
   );
+
+  if (!particleEnabled || !ConnectKit) return shell;
+
+  return <ConnectKit>{shell}</ConnectKit>;
 }

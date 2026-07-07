@@ -4,8 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
+    "dev:mobile": "next dev --webpack --hostname 0.0.0.0",
     "build": "next build --webpack",
     "start": "next start",
+    "start:mobile": "next start --hostname 0.0.0.0",
+    "preview:mobile": "npm run build && npm run start:mobile",
     "lint": "eslint"
   },
   "dependencies": {
