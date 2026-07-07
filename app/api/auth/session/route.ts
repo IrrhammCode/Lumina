@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       walletAddress: user.walletAddress,
       portalToken: user.portalToken,
       onboarded: user.onboarded,
+      provider: user.provider,
     },
   });
 }

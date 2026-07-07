@@ -101,6 +101,7 @@ export function persistAuthUser(
     loggedIn: true,
     walletAddress: user.walletAddress,
     portalToken: user.portalToken,
+    provider: user.provider,
   });
   if (user.onboarded) setOnboardedFromServer();
 }
@@ -128,6 +129,7 @@ export async function restoreSession(): Promise<LuminaUser | null> {
           loggedIn: true,
           walletAddress: magic.data.user.walletAddress,
           portalToken: magic.data.user.portalToken,
+          provider: magic.data.user.provider,
         };
       }
     }
@@ -142,6 +144,7 @@ export async function restoreSession(): Promise<LuminaUser | null> {
     loggedIn: true,
     walletAddress: result.data.user.walletAddress,
     portalToken: result.data.user.portalToken,
+    provider: result.data.user.provider,
   };
 }
 

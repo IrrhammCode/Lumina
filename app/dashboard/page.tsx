@@ -24,6 +24,8 @@ import FamilyPortalCard from "@/components/FamilyPortalCard";
 import IpfsGraphProof from "@/components/IpfsGraphProof";
 import CareCompass from "@/components/CareCompass";
 import MagicMoment from "@/components/MagicMoment";
+import MagicCareCard from "@/components/MagicCareCard";
+import MagicFirstSendBanner from "@/components/MagicFirstSendBanner";
 import { StaggerList, StaggerItem } from "@/components/StaggerList";
 
 import { getStoredUser, isOnboarded } from "@/lib/auth";
@@ -287,6 +289,16 @@ export default function DashboardPage() {
         </AnimatePresence>
 
         <QuickActions pendingCount={pending.length} variant="row" />
+
+        {isMagicMode && (
+          <MagicFirstSendBanner paymentCount={stats.count} />
+        )}
+
+        {isMagicMode && (
+          <section className="section-block">
+            <MagicCareCard userName={userName} />
+          </section>
+        )}
 
         {isMagicMode && (
           <section className="section-block">

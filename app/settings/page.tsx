@@ -25,6 +25,7 @@ import { hasMagicConfig } from "@/lib/magic-config";
 
 const ParticleLogoutButton = dynamic(() => import("@/components/ParticleLogoutButton"), { ssr: false });
 const MagicLogoutButton = dynamic(() => import("@/components/MagicLogoutButton"), { ssr: false });
+const MagicCareCard = dynamic(() => import("@/components/MagicCareCard"), { ssr: false });
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -81,6 +82,11 @@ export default function SettingsPage() {
         }
       >
         <PageEnter>
+        {hasMagicConfig() && (
+          <div className="settings-magic-card-slot">
+            <MagicCareCard userName={userName} />
+          </div>
+        )}
         <div className="settings-group">
           <p className="settings-group-label">{profile.careGroup}</p>
           <div className="settings-list">

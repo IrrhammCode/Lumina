@@ -426,17 +426,36 @@ export const family = {
 export const compass = {
   eyebrow: "AI care advisor",
   title: "Care Compass",
-  sub: "Ask what to send — Tavily researches, your Magic wallet sends.",
+  sub: "Tavily researches costs → one tap → Magic wallet signs. No MetaMask.",
   placeholder: "How much pulsa does mom need?",
   prompts: [
     "Pulsa budget for mom?",
     "School fees this term?",
     "Medicine emergency fund?",
   ],
-  searching: "Researching care costs…",
-  sendLabel: "Send with Magic wallet",
-  poweredTavily: "Powered by Tavily AI",
-  poweredCurated: "Curated care tips · add TAVILY_API_KEY for live research",
+  searching: "Tavily researching care costs…",
+  sendLabel: "Send now",
+  expressLabel: "One-tap with Magic wallet",
+  expressCta: (amt: number) => `Send $${amt} now`,
+  expressSuccess: "Sent — Magic wallet signed invisibly.",
+  expressFailed: "Could not complete send",
+  poweredTavily: "Live research · Tavily AI",
+  poweredCurated: "Curated care tips",
+};
+
+export const magicCard = {
+  brand: "Lumina Care",
+  type: "Embedded wallet",
+  invisible: "Invisible",
+  idLabel: "Care ID",
+  compactLabel: "Magic care wallet",
+  signedIn: (via: string) => `Signed in with ${via}`,
+};
+
+export const magicFirstSend = {
+  title: "Send your first care",
+  sub: "Face ID → Magic signs → family sees proof in ~10s",
+  cta: "$20",
 };
 
 export const magicMoment = {
@@ -496,6 +515,9 @@ export const onboarding = {
   ctaWallet: "Continue",
   familySub: "Your family",
   familyPick: "Choose everyone you'll support",
+  familyInsightTitle: (country: string) => `Tavily insight · ${country}`,
+  familyInsightLoading: "Researching typical care costs…",
+  familyInsightFoot: "Magic wallet ready — set autopilot after onboarding.",
   addTitle: "Someone else?",
   readyTitle: "You're ready",
   readySub: (n: number) => `Supporting ${n} ${n === 1 ? "person" : "people"} back home.`,
@@ -546,10 +568,16 @@ export const auth = {
 
 export const welcome = {
   trust: "Magic wallet · Google or Apple sign-in",
+  trustMagic: "Magic embedded wallet · invisible to you",
   features: [
     "School fees & bills — requested from home",
     "Autopilot for pulsa and recurring care",
     "They know the moment it's paid",
+  ],
+  featuresMagic: [
+    "Google or Apple — wallet created invisibly",
+    "Tavily AI suggests what to send",
+    "One tap — Magic signs, no MetaMask",
   ],
   cta: "Create account",
   signIn: "I already have an account",
@@ -602,6 +630,8 @@ export const bio = {
   scanning: "Hold still…",
   uaHint: "Cross-chain USDT via Universal Account",
   demoHint: "Demo settlement — no wallet required",
+  magicHint: "Your invisible Magic wallet signs — no seed phrase, no extension",
+  magicBadge: "Magic embedded wallet",
 };
 
 export const meta = {

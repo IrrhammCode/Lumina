@@ -1,8 +1,11 @@
+export type AuthProvider = "wallet" | "google" | "apple" | "email" | "magic";
+
 export type LuminaUser = {
   email: string;
   loggedIn: boolean;
   walletAddress?: string;
   portalToken?: string;
+  provider?: AuthProvider;
 };
 
 const USER_KEY = "lumina_user";

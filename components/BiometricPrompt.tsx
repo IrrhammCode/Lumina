@@ -8,6 +8,7 @@ import { bio } from "@/lib/copy";
 import { getPrefs } from "@/lib/prefs";
 import { hasParticleConfig } from "@/lib/particle-config";
 import { useLuminaUA } from "@/app/providers/UniversalAccountProvider";
+import { Sparkles } from "lucide-react";
 
 type BiometricContext = "approve" | "activate" | "pay" | "default";
 
@@ -36,16 +37,18 @@ export default function BiometricPrompt({
   context = "default",
 }: BiometricPromptProps) {
   const copy = CONTEXT_COPY[context];
-  const { isUaMode } = useLuminaUA();
+  const { isUaMode, isMagicMode } = useLuminaUA();
   const [scanning, setScanning] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const biometricEnabled = isOpen ? getPrefs().biometricEnabled : true;
-  const settlementHint = hasParticleConfig()
-    ? isUaMode
-      ? bio.uaHint
-      : bio.demoHint
-    : undefined;
+  const settlementHint = isMagicMode
+    ? bio.magicHint
+    : hasParticleConfig()
+      ? isUaMode
+        ? bio.uaHint
+        : bio.demoHint
+      : undefined;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -98,6 +101,12 @@ export default function BiometricPrompt({
             </motion.button>
 
             <div className="text-center space-y-4 px-6">
+              {isMagicMode && (
+                <span className="bio-magic-badge">
+                  <Sparkles size={12} aria-hidden />
+                  {bio.magicBadge}
+                </span>
+              )}
               <h3 className="text-title text-lg">{copy.title}</h3>
               {amount && recipient && (
                 <div>

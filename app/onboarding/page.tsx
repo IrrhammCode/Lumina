@@ -17,6 +17,7 @@ import { onboarding, family, portal } from "@/lib/copy";
 import MemberAvatar from "@/components/MemberAvatar";
 import FamilyPortalCard from "@/components/FamilyPortalCard";
 import OnboardingPledge from "./OnboardingPledge";
+import OnboardingFamilyInsight from "./OnboardingFamilyInsight";
 
 const OnboardingWalletStep = dynamic(() => import("./OnboardingWalletStep"), { ssr: false });
 const OnboardingMagicWalletStep = dynamic(() => import("./OnboardingMagicWalletStep"), { ssr: false });
@@ -180,6 +181,11 @@ export default function OnboardingPage() {
         {step === "family" && (
           <motion.div key="f" variants={slideForward} initial="initial" animate="animate" exit="exit" className="space-y-4">
             <p className="onboard-pick-label">{onboarding.familyPick}</p>
+            {isMagicOnboarding && (
+              <OnboardingFamilyInsight
+                members={SUGGESTED.filter((m) => selected.includes(m.id))}
+              />
+            )}
             <div className="onboard-family-grid">
               {SUGGESTED.map((m) => {
                 const picked = selected.includes(m.id);

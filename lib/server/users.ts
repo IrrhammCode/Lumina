@@ -91,6 +91,7 @@ export async function createAuthResponse(user: UserRecord): Promise<Response> {
         walletAddress: user.walletAddress,
         portalToken: user.portalToken,
         onboarded: user.onboarded,
+        provider: user.provider,
       },
     },
   });

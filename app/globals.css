@@ -1728,6 +1728,273 @@ body {
   border-radius: var(--radius-md);
 }
 
+/* Magic Care Card — Cash App / Revolut style */
+.magic-care-card {
+  position: relative;
+  padding: 1.25rem 1.125rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1a1528 0%, #2d2248 45%, #3d2f5c 100%);
+  color: #f8f4ef;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(26, 21, 40, 0.25);
+}
+
+.magic-care-card--compact {
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, #2d2248, #3d2f5c);
+}
+
+.magic-care-card-shine {
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 60%;
+  height: 120%;
+  background: radial-gradient(circle, rgba(255, 220, 160, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.magic-care-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.magic-care-card-brand {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.magic-care-card-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+}
+
+.magic-care-card-name {
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.magic-care-card-type {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 0.15rem;
+}
+
+.magic-care-card-id-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.magic-care-card-id-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.magic-care-card-id-value {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.15rem;
+}
+
+.magic-care-card-copy {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.magic-care-card-foot {
+  margin-top: 0.75rem;
+  font-size: 0.6875rem;
+  opacity: 0.65;
+}
+
+.magic-care-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.magic-care-card-via {
+  font-size: 0.6875rem;
+  opacity: 0.65;
+  margin-top: 0.25rem;
+}
+
+/* Magic first send nudge */
+.magic-first-send {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-glow-pale);
+  border: 1px solid var(--color-glow);
+}
+
+.magic-first-send-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--color-glow);
+  color: var(--color-canvas);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.magic-first-send-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.magic-first-send-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.magic-first-send-sub {
+  font-size: 0.6875rem;
+  color: var(--color-body);
+  margin-top: 0.1rem;
+}
+
+.magic-first-send-cta {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--color-canvas);
+  background: var(--color-glow-deep);
+  border: none;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.magic-first-send-close {
+  padding: 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--color-mute);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.settings-magic-card-slot {
+  margin-bottom: 1.25rem;
+}
+
+.bio-magic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-glow-deep);
+  background: var(--color-glow-pale);
+  border-radius: var(--radius-pill);
+}
+
+.care-compass-amount-btn--express {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 800;
+  color: var(--color-canvas) !important;
+  background: var(--color-glow-deep) !important;
+  border-color: var(--color-glow-deep) !important;
+}
+
+.care-compass-express-success {
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-positive);
+  background: rgba(34, 120, 80, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.onboard-family-insight {
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-border-soft);
+  margin-bottom: 1rem;
+}
+
+.onboard-family-insight-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-mute);
+}
+
+.onboard-family-insight-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-mute);
+}
+
+.onboard-family-insight-body {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-ink);
+}
+
+.onboard-family-insight-foot {
+  margin-top: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--color-mute);
+}
+
 .auth-divider {
   display: flex;
   align-items: center;

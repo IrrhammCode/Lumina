@@ -20,10 +20,11 @@ export async function searchCareCompass(
   if (!apiKey) return null;
 
   const enriched = [
-    "Diaspora caregiver remittance and family care budgeting.",
+    "Diaspora caregiver using Lumina app with Magic embedded invisible wallet.",
+    "Consumer fintech UX — no crypto jargon, focus on care amounts and family needs.",
     familyContext ? `Family: ${familyContext}.` : "",
     `Question: ${query}`,
-    "Give practical advice with USD amount ranges when relevant. Under 120 words.",
+    "Give practical advice with specific USD amount suggestions ($15, $20, $50). Under 100 words.",
   ]
     .filter(Boolean)
     .join(" ");

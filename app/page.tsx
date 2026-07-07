@@ -10,6 +10,7 @@ import { staggerContainer, staggerItem } from "@/lib/motion";
 import { welcome } from "@/lib/copy";
 import { preloadConnectKit } from "@/lib/connectkit-preload";
 import { hasParticleConfig } from "@/lib/particle-config";
+import { hasMagicConfig } from "@/lib/magic-config";
 
 const FEATURE_ICONS = [Inbox, Repeat, Bell];
 
@@ -18,11 +19,15 @@ export default function WelcomePage() {
 
   useEffect(() => {
     if (isLoggedIn()) router.replace(getPostLoginPath());
-    if (hasParticleConfig()) preloadConnectKit();
+    if (hasParticleConfig() && !hasMagicConfig()) preloadConnectKit();
   }, [router]);
 
+  const magicMode = hasMagicConfig();
+  const features = magicMode ? welcome.featuresMagic : welcome.features;
+  const trustLabel = magicMode ? welcome.trustMagic : welcome.trust;
+
   const goLogin = () => {
-    preloadConnectKit();
+    if (!magicMode) preloadConnectKit();
     router.push("/login");
   };
 
@@ -51,10 +56,10 @@ export default function WelcomePage() {
         transition={{ delay: 0.15 }}
         className="welcome-trust-pill"
       >
-        {welcome.trust}
+        {trustLabel}
       </motion.p>
       <motion.div variants={staggerContainer} initial={false} animate="show" className="auth-feature-grid">
-        {welcome.features.map((text, i) => {
+        {features.map((text, i) => {
           const Icon = FEATURE_ICONS[i];
           return (
             <motion.div key={text} variants={staggerItem} className="auth-feature-card">
