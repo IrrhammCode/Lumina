@@ -45,7 +45,7 @@ export type PaymentRecord = {
   date: string;
   settlementRef?: string;
   settlementExplorerUrl?: string;
-  settlementMode?: "ua" | "demo";
+  settlementMode?: "ua" | "demo" | "magic";
 };
 
 export const NEED_META: Record<
@@ -62,22 +62,11 @@ export const NEED_META: Record<
 
 const RULES_KEY = "lumina_rules";
 const PAYMENTS_KEY = "lumina_payments";
-const SEEDED_KEY = "lumina_seeded";
-
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function addDays(base: Date, days: number): Date {
   const d = new Date(base);
   d.setDate(d.getDate() + days);
-  return d;
-}
-
-function nextMonday(from = new Date()): Date {
-  const d = new Date(from);
-  const day = d.getDay();
-  const diff = day === 0 ? 1 : day === 1 ? 7 : 8 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(9, 0, 0, 0);
   return d;
 }
 
@@ -124,7 +113,6 @@ export function formatNextRun(iso: string): string {
 
 export function getRules(): AllowanceRule[] {
   if (typeof window === "undefined") return [];
-  seedIfNeeded();
   const raw = localStorage.getItem(RULES_KEY);
   if (!raw) return [];
   try {
@@ -180,7 +168,6 @@ function migratePayment(raw: Record<string, unknown>): PaymentRecord {
 
 export function getPayments(): PaymentRecord[] {
   if (typeof window === "undefined") return [];
-  seedIfNeeded();
   const raw = localStorage.getItem(PAYMENTS_KEY);
   if (!raw) return [];
   try {
@@ -211,7 +198,7 @@ export async function createManualPayment(input: {
   label?: string;
   settlementRef?: string;
   settlementExplorerUrl?: string;
-  settlementMode?: "ua" | "demo";
+  settlementMode?: "ua" | "demo" | "magic";
   uaTransactionId?: string;
   txHash?: string;
 }): Promise<PaymentRecord | null> {
@@ -247,11 +234,12 @@ export async function createManualPayment(input: {
     type: "manual",
     status: "completed",
     date: new Date().toISOString(),
-    settlementRef: input.settlementRef ?? `0x${Math.random().toString(16).slice(2, 10)}…arb`,
+    settlementRef: input.settlementRef ?? "",
     settlementExplorerUrl: input.settlementExplorerUrl,
-    settlementMode: input.settlementMode ?? (input.settlementExplorerUrl ? "ua" : "demo"),
+    settlementMode: input.settlementMode ?? "magic",
   };
 
+  if (!payment.settlementRef) return null;
   addPayment(payment);
   return payment;
 }
@@ -377,97 +365,3 @@ export async function executeRule(
   return payment;
 }
 
-function seedIfNeeded(): void {
-  if (typeof window === "undefined") return;
-  if (isServerBacked()) return;
-  if (localStorage.getItem(SEEDED_KEY)) return;
-
-  const now = new Date();
-  const demoRules: AllowanceRule[] = [
-    {
-      id: "rule_demo_1",
-      memberId: "1",
-      needType: "pulsa",
-      label: "Pulsa for Mom",
-      amount: 10,
-      schedule: { type: "weekly", dayOfWeek: 1 },
-      status: "active",
-      lastRunAt: addDays(now, -6).toISOString(),
-      nextRunAt: nextMonday(now).toISOString(),
-      createdAt: addDays(now, -30).toISOString(),
-    },
-    {
-      id: "rule_demo_2",
-      memberId: "1",
-      needType: "electricity",
-      label: "Electricity for Mom",
-      amount: 42,
-      schedule: { type: "before_due", daysBeforeDue: 3 },
-      status: "active",
-      lastRunAt: addDays(now, -12).toISOString(),
-      nextRunAt: addDays(now, 4).toISOString(),
-      createdAt: addDays(now, -45).toISOString(),
-    },
-    {
-      id: "rule_demo_3",
-      memberId: "2",
-      needType: "school",
-      label: "School for Brother",
-      amount: 85,
-      schedule: { type: "monthly", dayOfMonth: 1 },
-      status: "active",
-      lastRunAt: addDays(now, -20).toISOString(),
-      nextRunAt: firstOfNextMonth(now).toISOString(),
-      createdAt: addDays(now, -60).toISOString(),
-    },
-  ];
-
-  const demoPayments: PaymentRecord[] = [
-    {
-      id: "pay_demo_1",
-      ruleId: "rule_demo_1",
-      ruleLabel: "Pulsa for Mom",
-      memberId: "1",
-      memberName: "Maria Santos",
-      countryCode: "PH",
-      needType: "pulsa",
-      amount: 10,
-      type: "auto",
-      status: "completed",
-      date: addDays(now, -6).toISOString(),
-      settlementRef: "0x8a3f2b1c…arb",
-    },
-    {
-      id: "pay_demo_2",
-      ruleId: "rule_demo_2",
-      ruleLabel: "Electricity for Mom",
-      memberId: "1",
-      memberName: "Maria Santos",
-      countryCode: "PH",
-      needType: "electricity",
-      amount: 42,
-      type: "auto",
-      status: "completed",
-      date: addDays(now, -12).toISOString(),
-      settlementRef: "0x4d9e7f2a…arb",
-    },
-    {
-      id: "pay_demo_3",
-      ruleId: "rule_demo_3",
-      ruleLabel: "School for Brother",
-      memberId: "2",
-      memberName: "Juan Santos",
-      countryCode: "PH",
-      needType: "school",
-      amount: 85,
-      type: "auto",
-      status: "completed",
-      date: addDays(now, -20).toISOString(),
-      settlementRef: "0x1c8b5e3d…arb",
-    },
-  ];
-
-  saveRules(demoRules);
-  localStorage.setItem(PAYMENTS_KEY, JSON.stringify(demoPayments));
-  localStorage.setItem(SEEDED_KEY, "1");
-}

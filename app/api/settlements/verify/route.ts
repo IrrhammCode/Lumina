@@ -14,7 +14,7 @@ type Body = {
   txHash?: string;
   settlementRef?: string;
   explorerUrl?: string;
-  settlementMode?: "ua" | "demo";
+  settlementMode?: "ua" | "demo" | "magic";
 };
 
 export async function POST(request: NextRequest) {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     txHash: body.txHash,
     settlementRef: body.settlementRef,
     explorerUrl: body.explorerUrl,
-    settlementMode: body.settlementMode ?? "ua",
+    settlementMode: body.settlementMode ?? "magic",
   });
 
   if (result.status === "failed") {

@@ -80,6 +80,7 @@ export default function CareCompass({ isMagicMode }: CareCompassProps) {
     setShowBio(false);
     if (!expressAmount || !family[0]) return;
 
+    try {
     const result = await settle(expressAmount);
     const payment = await createManualPayment({
       memberId: family[0].id,
@@ -97,6 +98,9 @@ export default function CareCompass({ isMagicMode }: CareCompassProps) {
     setExpressSuccess(true);
     void refreshBalance();
     setExpressAmount(null);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : compass.expressFailed);
+    }
   };
 
   return (

@@ -11,7 +11,7 @@ type CreateBody = {
   type?: PaymentRecord["type"];
   settlementRef?: string;
   settlementExplorerUrl?: string;
-  settlementMode?: "ua" | "demo";
+  settlementMode?: "ua" | "demo" | "magic";
 };
 
 export async function GET(request: NextRequest) {

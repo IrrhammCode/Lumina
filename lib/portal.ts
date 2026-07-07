@@ -5,6 +5,8 @@ import { api } from "./api-client";
 import { buildPortalSearchParams } from "./portal-capability";
 import { signPortalCapability } from "./portal-capability-client";
 import type { Connector } from "@particle-network/connector-core";
+import { getMagicProvider } from "./magic";
+import { hasMagicConfig } from "./magic-config";
 
 type SignedPortalCache = {
   memberId: string;
@@ -47,10 +49,12 @@ export async function buildSignedPortalUrl(input?: {
 
   if (wallet) {
     try {
+      const magicProvider = hasMagicConfig() ? getMagicProvider() : null;
       const { capability, signature } = await signPortalCapability({
         sponsor: wallet,
         memberId,
-        connector: input?.connector ?? null,
+        connector: magicProvider ? null : (input?.connector ?? null),
+        provider: (magicProvider as import("./portal-capability-client").EthereumProvider | null) ?? undefined,
       });
       const params = buildPortalSearchParams(capability, signature);
       const url = `${window.location.origin}/ask?${params.toString()}`;

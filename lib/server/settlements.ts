@@ -25,7 +25,7 @@ export type VerifySettlementInput = {
   txHash?: string;
   settlementRef: string;
   explorerUrl?: string;
-  settlementMode: "ua" | "demo";
+  settlementMode: "ua" | "demo" | "magic";
 };
 
 export type VerifySettlementResult = {
@@ -140,7 +140,7 @@ export async function verifyAndRecordSettlement(
 
   if (input.settlementMode === "demo") {
     if (!allowDemoSettlement()) {
-      return { status: "failed", reason: "Demo settlements disabled in production" };
+      return { status: "failed", reason: "Demo settlements disabled — use Magic or Universal Account" };
     }
     const settlement = await createSettlement({
       id: createSettlementId(),
@@ -154,6 +154,36 @@ export async function verifyAndRecordSettlement(
       settlementRef: input.settlementRef,
       explorerUrl: input.explorerUrl,
       settlementMode: "demo",
+      status: "verified",
+    });
+    return applyVerifiedSettlement(user, settlement);
+  }
+
+  if (input.settlementMode === "magic") {
+    const txHash = input.txHash ?? (input.settlementRef.startsWith("0x") ? input.settlementRef : undefined);
+    if (!txHash) {
+      return { status: "failed", reason: "Magic settlement requires an on-chain transaction hash" };
+    }
+    const chain = await verifyArbitrumUsdtTransfer({
+      txHash,
+      minAmountUsd: input.amount * 0.99,
+    });
+    if (!chain.verified) {
+      return { status: "failed", reason: chain.reason ?? "USDT transfer not verified on Arbitrum" };
+    }
+    const settlement = await createSettlement({
+      id: createSettlementId(),
+      userId,
+      txHash,
+      amount: input.amount,
+      kind: input.kind,
+      requestId: input.requestId,
+      ruleId: input.ruleId,
+      memberId: input.memberId,
+      needType: input.needType,
+      settlementRef: input.settlementRef,
+      explorerUrl: input.explorerUrl,
+      settlementMode: "magic",
       status: "verified",
     });
     return applyVerifiedSettlement(user, settlement);
@@ -176,8 +206,6 @@ export async function verifyAndRecordSettlement(
     });
     verified = chain.verified;
     verifyReason = chain.reason;
-  } else if (!usePostgresStorage() && input.settlementMode === "ua" && allowDemoSettlement()) {
-    verified = true;
   }
 
   const settlement = await createSettlement({

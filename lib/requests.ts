@@ -1,7 +1,7 @@
 import { api } from "./api-client";
 import { isLoggedIn } from "./auth";
 import { confirmSettlementAfterPay } from "./settlement-poll";
-import { isServerBacked } from "./sync";
+
 import type { PaymentSettlementFields } from "./settlement";
 import { getMemberById } from "./family";
 import { addPayment, getPayments, NEED_META, type NeedType } from "./allowances";
@@ -27,7 +27,6 @@ export type CareRequest = {
 };
 
 const REQUESTS_KEY = "lumina_requests";
-const REQUESTS_SEEDED = "lumina_requests_seeded";
 
 function addDays(base: Date, days: number): Date {
   const d = new Date(base);
@@ -44,7 +43,6 @@ function migrateRequest(raw: Record<string, unknown>): CareRequest {
 
 export function getRequests(): CareRequest[] {
   if (typeof window === "undefined") return [];
-  seedRequestsIfNeeded();
   const raw = localStorage.getItem(REQUESTS_KEY);
   if (!raw) return [];
   try {
@@ -206,9 +204,9 @@ export async function approveRequest(
     type: "pull",
     status: "completed",
     date: new Date().toISOString(),
-    settlementRef: settlement?.settlementRef ?? `0x${Math.random().toString(16).slice(2, 10)}…arb`,
+    settlementRef: settlement?.settlementRef ?? "",
     settlementExplorerUrl: settlement?.settlementExplorerUrl,
-    settlementMode: settlement?.settlementMode ?? (settlement?.settlementExplorerUrl ? "ua" : "demo"),
+    settlementMode: settlement?.settlementMode ?? "magic",
   });
 
   saveRequests(
@@ -227,48 +225,6 @@ export function formatRequestAge(iso: string): string {
   const days = Math.floor(hours / 24);
   if (days === 1) return "Yesterday";
   return `${days}d ago`;
-}
-
-function seedRequestsIfNeeded(): void {
-  if (typeof window === "undefined") return;
-  if (isServerBacked()) return;
-  if (localStorage.getItem(REQUESTS_SEEDED)) return;
-
-  const now = new Date();
-  const friday = addDays(now, 3);
-  const dueStr = friday.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-
-  const demo: CareRequest[] = [
-    {
-      id: "req_demo_1",
-      memberId: "2",
-      needType: "school",
-      title: "School fee — Q3 tuition",
-      message: "Hi ate, school fee is due this Friday. Can you help with tuition?",
-      amount: 85,
-      dueLabel: dueStr,
-      billNote: "SMAN 3 Manila · Quarter 3 tuition",
-      status: "pending",
-      source: "family",
-      createdAt: addDays(now, -0.5).toISOString(),
-    },
-    {
-      id: "req_demo_2",
-      memberId: "1",
-      needType: "electricity",
-      title: "Meralco bill — July",
-      message: "Electric bill arrived. Due in 5 days.",
-      amount: 38,
-      dueLabel: addDays(now, 5).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-      billNote: "Meralco · Account ***4821",
-      status: "pending",
-      source: "family",
-      createdAt: addDays(now, -1).toISOString(),
-    },
-  ];
-
-  saveRequests(demo);
-  localStorage.setItem(REQUESTS_SEEDED, "1");
 }
 
 export function getRequestMeta(needType: NeedType) {

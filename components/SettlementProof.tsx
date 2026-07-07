@@ -2,6 +2,7 @@
 
 import { ExternalLink } from "lucide-react";
 import type { PaymentRecord } from "@/lib/allowances";
+import type { SettlementMode } from "@/lib/settlement-mode";
 import { receipt } from "@/lib/copy";
 
 type SettlementProofProps = {
@@ -9,16 +10,31 @@ type SettlementProofProps = {
   variant?: "sheet" | "inline" | "compact";
 };
 
+function proofCopy(mode?: SettlementMode, hasExplorer?: boolean): string {
+  if (mode === "magic") return receipt.proofMagic;
+  if (mode === "ua" || hasExplorer) return receipt.proofUa;
+  return receipt.proofOnChain;
+}
+
+function explorerLabel(mode?: SettlementMode): string {
+  if (mode === "magic") return receipt.viewArbiscan;
+  return receipt.viewUniversalX;
+}
+
 export default function SettlementProof({ payment, variant = "sheet" }: SettlementProofProps) {
   if (!payment.settlementRef) return null;
 
-  const isUa = payment.settlementMode === "ua" || !!payment.settlementExplorerUrl;
-  const proofSub = isUa ? receipt.proofUa : receipt.proofDemo;
+  const isOnChain =
+    payment.settlementMode === "magic" ||
+    payment.settlementMode === "ua" ||
+    !!payment.settlementExplorerUrl;
+  const proofSub = proofCopy(payment.settlementMode, !!payment.settlementExplorerUrl);
+  const linkLabel = explorerLabel(payment.settlementMode);
 
   if (variant === "compact") {
     return (
       <div className="settlement-proof-compact">
-        {isUa && <span className="badge-ua">{receipt.onChain}</span>}
+        {isOnChain && <span className="badge-ua">{receipt.onChain}</span>}
         {payment.settlementExplorerUrl ? (
           <a
             href={payment.settlementExplorerUrl}
@@ -27,7 +43,7 @@ export default function SettlementProof({ payment, variant = "sheet" }: Settleme
             className="settlement-proof-link"
           >
             <ExternalLink size={14} />
-            {receipt.viewUniversalX}
+            {linkLabel}
           </a>
         ) : (
           <code className="settlement-proof-ref">{payment.settlementRef}</code>
@@ -48,7 +64,7 @@ export default function SettlementProof({ payment, variant = "sheet" }: Settleme
             className="settlement-proof-link"
           >
             <ExternalLink size={14} />
-            {receipt.viewUniversalX}
+            {linkLabel}
           </a>
         ) : (
           <code className="text-xs font-mono text-mute">{payment.settlementRef}</code>
@@ -61,7 +77,7 @@ export default function SettlementProof({ payment, variant = "sheet" }: Settleme
     <div className="proof-loop">
       <div className="flex items-center justify-between gap-2 mb-2">
         <p className="text-xs font-bold uppercase tracking-wider text-mute">{receipt.proof}</p>
-        {isUa && <span className="badge-ua">{receipt.onChain}</span>}
+        {isOnChain && <span className="badge-ua">{receipt.onChain}</span>}
       </div>
       <code className="text-xs text-body font-mono truncate block">{payment.settlementRef}</code>
       <p className="text-caption text-xs mt-2">{proofSub}</p>
@@ -73,7 +89,7 @@ export default function SettlementProof({ payment, variant = "sheet" }: Settleme
           className="settlement-proof-link mt-3"
         >
           <ExternalLink size={14} />
-          {receipt.viewUniversalX}
+          {linkLabel}
         </a>
       )}
     </div>

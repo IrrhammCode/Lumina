@@ -33,7 +33,7 @@ export const home = {
   heroSubPending: brand.tagline,
   balanceLabel: "Available to send",
   balanceUaLabel: "Unified balance",
-  balanceMagicLabel: "Care wallet",
+  balanceMagicLabel: "USDT on Arbitrum",
   sentMonth: "Sent this month",
   payments: "Payments",
   awaiting: "Needs your OK",
@@ -614,7 +614,9 @@ export const receipt = {
   proof: "Settlement",
   proofSub: "Confirmed on-chain. Family sees it in ~10s.",
   proofUa: "Cross-chain settlement via Universal Account.",
-  proofDemo: "Demo mode — simulated reference.",
+  proofMagic: "USDT sent on Arbitrum via your Magic embedded wallet.",
+  proofOnChain: "Verified on Arbitrum.",
+  viewArbiscan: "View on Arbiscan",
   viewUniversalX: "View on UniversalX",
   onChain: "On-chain",
   close: "Close",
@@ -630,7 +632,7 @@ export const bio = {
   scanning: "Hold still…",
   uaHint: "Cross-chain USDT via Universal Account",
   demoHint: "Demo settlement — no wallet required",
-  magicHint: "Your invisible Magic wallet signs — no seed phrase, no extension",
+  magicHint: "Sends real USDT on Arbitrum from your Magic wallet — needs ETH for gas",
   magicBadge: "Magic embedded wallet",
 };
 

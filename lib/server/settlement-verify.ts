@@ -56,5 +56,5 @@ export async function verifyArbitrumUsdtTransfer(input: {
 }
 
 export function allowDemoSettlement(): boolean {
-  return process.env.NODE_ENV !== "production" && process.env.ALLOW_DEMO_SETTLEMENT !== "false";
+  return process.env.ALLOW_DEMO_SETTLEMENT === "true";
 }

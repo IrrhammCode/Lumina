@@ -32,7 +32,7 @@ export type SettlementRecord = {
   needType?: string;
   settlementRef?: string;
   explorerUrl?: string;
-  settlementMode: "ua" | "demo";
+  settlementMode: "ua" | "demo" | "magic";
   verifiedAt?: string;
   createdAt: string;
 };

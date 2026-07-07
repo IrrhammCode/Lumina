@@ -54,7 +54,7 @@ User (Google/Apple/Email)
         │
         ├── Care Compass ──► AI care advisor (live cost research)
         │
-        └── Approve / Pay ──► Magic personal_sign (demo settlement)
+        └── Approve / Pay ──► Magic wallet sends USDT on Arbitrum (verified on-chain)
 ```
 
 Particle Universal Accounts remain available as fallback when only Particle keys are configured.
@@ -69,7 +69,8 @@ Particle Universal Accounts remain available as fallback when only Particle keys
 | `app/login/oauth/page.tsx` | OAuth callback (`getRedirectResult`) |
 | `app/api/auth/magic/verify/route.ts` | Server-side DID token verification |
 | `lib/magic.ts` | Magic SDK + OAuth2 extension |
-| `lib/magic-settlement.ts` | `personal_sign` for care payments |
+| `lib/magic-settlement.ts` | Real USDT transfer on Arbitrum via Magic wallet |
+| `lib/magic-balance.ts` | On-chain USDT + ETH gas balance reads |
 | `components/MagicCareCard.tsx` | Consumer fintech wallet card |
 | `components/CareCompass.tsx` | AI care advisor + one-tap Magic Express Pay |
 | `components/MagicMoment.tsx` | First-login wallet reveal celebration |

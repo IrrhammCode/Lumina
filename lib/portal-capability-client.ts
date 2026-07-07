@@ -10,7 +10,7 @@ import {
 
 const DEFAULT_CHAIN_ID = 42161;
 
-type EthereumProvider = {
+export type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
 };
 

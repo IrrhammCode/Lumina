@@ -12,7 +12,7 @@ type PatchBody = {
   settlement?: {
     settlementRef?: string;
     settlementExplorerUrl?: string;
-    settlementMode?: "ua" | "demo";
+    settlementMode?: "ua" | "demo" | "magic";
   };
 };
 

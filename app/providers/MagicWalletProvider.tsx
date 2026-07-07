@@ -7,13 +7,16 @@ import {
   isMagicLoggedIn,
   logoutMagic,
 } from "@/lib/magic";
-import { settleWithMagicWallet } from "@/lib/magic-settlement";
+import { fetchMagicWalletBalances } from "@/lib/magic-balance";
+import { settleWithMagicWallet, MagicSettlementError } from "@/lib/magic-settlement";
 import type { SettlementResult } from "@/lib/settlement";
 
 type MagicWalletContextValue = {
   ready: boolean;
   isMagicMode: boolean;
   address: string | null;
+  balanceUsd: number | null;
+  hasGas: boolean;
   logout: () => Promise<void>;
   settle: (amount: number) => Promise<SettlementResult>;
   refresh: () => Promise<void>;
@@ -23,13 +26,11 @@ const defaultValue: MagicWalletContextValue = {
   ready: true,
   isMagicMode: false,
   address: null,
+  balanceUsd: null,
+  hasGas: false,
   logout: async () => {},
-  settle: async (amount) => {
-    const signed = await settleWithMagicWallet(amount);
-    if (signed) {
-      return { ref: signed.ref, explorerUrl: signed.explorerUrl, mode: "demo" };
-    }
-    return { ref: `0x${Math.random().toString(16).slice(2, 10)}…arb`, mode: "demo" };
+  settle: async () => {
+    throw new MagicSettlementError("Magic wallet is not configured");
   },
   refresh: async () => {},
 };
@@ -44,6 +45,8 @@ export default function MagicWalletProvider({ children }: { children: React.Reac
   const enabled = hasMagicConfig();
   const [ready, setReady] = useState(!enabled);
   const [address, setAddress] = useState<string | null>(null);
+  const [balanceUsd, setBalanceUsd] = useState<number | null>(null);
+  const [hasGas, setHasGas] = useState(false);
   const [active, setActive] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -55,12 +58,19 @@ export default function MagicWalletProvider({ children }: { children: React.Reac
     if (!loggedIn) {
       setActive(false);
       setAddress(null);
+      setBalanceUsd(null);
+      setHasGas(false);
       setReady(true);
       return;
     }
     const addr = await getMagicWalletAddress();
     setActive(Boolean(addr));
     setAddress(addr);
+    if (addr) {
+      const balances = await fetchMagicWalletBalances(addr);
+      setBalanceUsd(balances?.usdtUsd ?? 0);
+      setHasGas(balances?.hasGas ?? false);
+    }
     setReady(true);
   }, [enabled]);
 
@@ -75,30 +85,28 @@ export default function MagicWalletProvider({ children }: { children: React.Reac
     await logoutMagic();
     setActive(false);
     setAddress(null);
+    setBalanceUsd(null);
+    setHasGas(false);
   }, []);
 
   const settle = useCallback(async (amount: number): Promise<SettlementResult> => {
-    const signed = await settleWithMagicWallet(amount);
-    if (signed) {
-      return {
-        ref: signed.ref,
-        explorerUrl: signed.explorerUrl,
-        mode: "demo",
-      };
-    }
-    return { ref: `0x${Math.random().toString(16).slice(2, 10)}…arb`, mode: "demo" };
-  }, []);
+    const result = await settleWithMagicWallet(amount);
+    void refresh();
+    return result;
+  }, [refresh]);
 
   const value = useMemo<MagicWalletContextValue>(
     () => ({
       ready,
       isMagicMode: active && Boolean(address),
       address,
+      balanceUsd,
+      hasGas,
       logout,
       settle,
       refresh,
     }),
-    [ready, active, address, logout, settle, refresh]
+    [ready, active, address, balanceUsd, hasGas, logout, settle, refresh]
   );
 
   return <MagicWalletContext.Provider value={value}>{children}</MagicWalletContext.Provider>;

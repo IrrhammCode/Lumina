@@ -89,6 +89,7 @@ function PayPageContent() {
     setShowBio(false);
     setErrorMsg(null);
     setProcessing(true);
+    try {
     const result = await settle(numAmount);
     setLastSettlement(result);
     const payment = await createManualPayment({
@@ -104,6 +105,10 @@ function PayPageContent() {
       return;
     }
     setStep("done");
+    } catch (error) {
+      setProcessing(false);
+      setErrorMsg(error instanceof Error ? error.message : settlement.failed);
+    }
   };
 
   if (!ready) return <PageLoading />;

@@ -62,7 +62,7 @@ export function useLuminaUA(): UAContextValue {
       ready: magic.ready,
       ua: null,
       balance: null,
-      balanceUsd: null,
+      balanceUsd: magic.balanceUsd,
       accountInfo: null,
       isUaMode: false,
       isMagicMode: true,

@@ -6,7 +6,7 @@ import {
   normalizeWallet,
   upsertUser,
 } from "./db";
-import { buildDemoSeed } from "./seed";
+import { buildEmptySeed } from "./seed";
 import type { SessionPayload, UserRecord } from "./types";
 import { NextResponse } from "next/server";
 import { signSession, sessionCookieOptions } from "./auth";
@@ -45,7 +45,7 @@ export async function findOrCreateUserByMagic(input: {
     portalToken: createPortalToken(),
     createdAt: new Date().toISOString(),
     prefs: { ...DEFAULT_PREFS },
-    ...buildDemoSeed(),
+    ...buildEmptySeed(),
   };
 
   return upsertUser(user);
@@ -65,7 +65,7 @@ export async function findOrCreateUserByWallet(walletAddress: string): Promise<U
     portalToken: createPortalToken(),
     createdAt: new Date().toISOString(),
     prefs: { ...DEFAULT_PREFS },
-    ...buildDemoSeed(),
+    ...buildEmptySeed(),
   };
 
   return upsertUser(user);

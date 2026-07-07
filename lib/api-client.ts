@@ -204,7 +204,7 @@ export const api = {
     txHash?: string;
     settlementRef: string;
     explorerUrl?: string;
-    settlementMode?: "ua" | "demo";
+    settlementMode?: "ua" | "demo" | "magic";
   }) {
     return apiFetch<{
       status: "verified" | "pending" | "failed";
@@ -241,7 +241,7 @@ export const api = {
     settlement?: {
       settlementRef?: string;
       settlementExplorerUrl?: string;
-      settlementMode?: "ua" | "demo";
+      settlementMode?: "ua" | "demo" | "magic";
     }
   ) {
     return apiFetch<{ request: CareRequest; payment?: PaymentRecord }>(`/api/requests/${id}`, {
@@ -265,7 +265,7 @@ export const api = {
       settlement?: {
         settlementRef?: string;
         settlementExplorerUrl?: string;
-        settlementMode?: "ua" | "demo";
+        settlementMode?: "ua" | "demo" | "magic";
       };
     }
   ) {
@@ -287,7 +287,7 @@ export const api = {
     type?: PaymentRecord["type"];
     settlementRef?: string;
     settlementExplorerUrl?: string;
-    settlementMode?: "ua" | "demo";
+    settlementMode?: "ua" | "demo" | "magic";
   }) {
     return apiFetch<{ payment: PaymentRecord }>("/api/payments", {
       method: "POST",

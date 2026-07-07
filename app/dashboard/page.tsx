@@ -151,6 +151,7 @@ export default function DashboardPage() {
     setShowBio(false);
     setErrorMsg(null);
 
+    try {
     if (bioContext === "pay" && autopilotQueue) {
       const result = await settle(autopilotQueue.amount);
       setLastSettlement(result);
@@ -196,6 +197,9 @@ export default function DashboardPage() {
       setSuccessMsg(null);
       setLastSettlement(null);
     }, 6000);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : settlement.failed);
+    }
   };
 
   const approveRequest_ = pending.find((r) => r.id === approveId);
@@ -222,7 +226,7 @@ export default function DashboardPage() {
 
   const floating = (
     <BalanceCard
-      balance={formatUnifiedBalance(balanceUsd, stats.total)}
+      balance={formatUnifiedBalance(balanceUsd)}
       balanceLabel={
         isUaMode ? home.balanceUaLabel : isMagicMode ? home.balanceMagicLabel : home.balanceLabel
       }
