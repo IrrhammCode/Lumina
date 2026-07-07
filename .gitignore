@@ -33,9 +33,23 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# env templates (safe to share)
 !env.example
+!.env.local.example
+
+# local research / scratch
+.research/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # vercel
 .vercel
