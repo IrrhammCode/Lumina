@@ -130,6 +130,7 @@ export const portal = {
   resetDone: "New link ready",
   revoked: "Portal link disabled",
   revokedHint: "Reset link to share with family again.",
+  signedHint: "Wallet-signed link · your care graph lives on IPFS",
 };
 
 export const toast = {

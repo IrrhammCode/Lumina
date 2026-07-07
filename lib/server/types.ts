@@ -19,6 +19,7 @@ export type UserRecord = {
   rules: AllowanceRule[];
   payments: PaymentRecord[];
   seeded: boolean;
+  graphCid?: string;
 };
 
 export type OtpRecord = {

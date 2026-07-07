@@ -1,7 +1,9 @@
 import type { UserRecord, WalletChallengeRecord } from "./types";
-import { usePostgres } from "./pg";
+import { getStorageMode, useIpfsStorage, usePostgresStorage } from "./storage-mode";
 import * as json from "./db-json";
+import * as ipfs from "./db-ipfs";
 import * as pg from "./db-pg";
+import * as store from "./settlement-store";
 
 export { normalizeWallet } from "./db-json";
 export type { SettlementRecord } from "./db-pg";
@@ -18,31 +20,47 @@ export function createSettlementId(): string {
   return `stl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function getActiveStorageLabel(): string {
+  return getStorageMode();
+}
+
 export async function listAllUsers(): Promise<UserRecord[]> {
-  return usePostgres() ? pg.pgListAllUsers() : json.jsonListAllUsers();
+  if (useIpfsStorage()) return ipfs.ipfsListAllUsers();
+  if (usePostgresStorage()) return pg.pgListAllUsers();
+  return json.jsonListAllUsers();
 }
 
 export async function getUserById(userId: string): Promise<UserRecord | null> {
-  return usePostgres() ? pg.pgGetUserById(userId) : json.jsonGetUserById(userId);
+  if (useIpfsStorage()) return ipfs.ipfsGetUserById(userId);
+  if (usePostgresStorage()) return pg.pgGetUserById(userId);
+  return json.jsonGetUserById(userId);
 }
 
 export async function getUserByWallet(address: string): Promise<UserRecord | null> {
-  return usePostgres() ? pg.pgGetUserByWallet(address) : json.jsonGetUserByWallet(address);
+  if (useIpfsStorage()) return ipfs.ipfsGetUserByWallet(address);
+  if (usePostgresStorage()) return pg.pgGetUserByWallet(address);
+  return json.jsonGetUserByWallet(address);
 }
 
 export async function getUserByPortalToken(token: string): Promise<UserRecord | null> {
-  return usePostgres() ? pg.pgGetUserByPortalToken(token) : json.jsonGetUserByPortalToken(token);
+  if (useIpfsStorage()) return ipfs.ipfsGetUserByPortalToken(token);
+  if (usePostgresStorage()) return pg.pgGetUserByPortalToken(token);
+  return json.jsonGetUserByPortalToken(token);
 }
 
 export async function upsertUser(user: UserRecord): Promise<UserRecord> {
-  return usePostgres() ? pg.pgUpsertUser(user) : json.jsonUpsertUser(user);
+  if (useIpfsStorage()) return ipfs.ipfsUpsertUser(user);
+  if (usePostgresStorage()) return pg.pgUpsertUser(user);
+  return json.jsonUpsertUser(user);
 }
 
 export async function updateUser(
   userId: string,
   patch: Partial<UserRecord>
 ): Promise<UserRecord | null> {
-  return usePostgres() ? pg.pgUpdateUser(userId, patch) : json.jsonUpdateUser(userId, patch);
+  if (useIpfsStorage()) return ipfs.ipfsUpdateUser(userId, patch);
+  if (usePostgresStorage()) return pg.pgUpdateUser(userId, patch);
+  return json.jsonUpdateUser(userId, patch);
 }
 
 export async function saveWalletChallenge(
@@ -51,15 +69,15 @@ export async function saveWalletChallenge(
   message: string,
   ttlMs = 5 * 60 * 1000
 ): Promise<void> {
-  return usePostgres()
-    ? pg.pgSaveWalletChallenge(address, nonce, message, ttlMs)
-    : json.jsonSaveWalletChallenge(address, nonce, message, ttlMs);
+  if (useIpfsStorage()) return ipfs.ipfsSaveWalletChallenge(address, nonce, message, ttlMs);
+  if (usePostgresStorage()) return pg.pgSaveWalletChallenge(address, nonce, message, ttlMs);
+  return json.jsonSaveWalletChallenge(address, nonce, message, ttlMs);
 }
 
 export async function consumeWalletChallenge(address: string): Promise<WalletChallengeRecord | null> {
-  return usePostgres()
-    ? pg.pgConsumeWalletChallenge(address)
-    : json.jsonConsumeWalletChallenge(address);
+  if (useIpfsStorage()) return ipfs.ipfsConsumeWalletChallenge(address);
+  if (usePostgresStorage()) return pg.pgConsumeWalletChallenge(address);
+  return json.jsonConsumeWalletChallenge(address);
 }
 
 export async function checkRateLimit(
@@ -67,34 +85,40 @@ export async function checkRateLimit(
   max: number,
   windowMs: number
 ): Promise<{ allowed: boolean; retryAfterSec?: number }> {
-  return usePostgres()
-    ? pg.pgCheckRateLimit(bucket, max, windowMs)
-    : json.jsonCheckRateLimit(bucket, max, windowMs);
+  if (useIpfsStorage()) return ipfs.ipfsCheckRateLimit(bucket, max, windowMs);
+  if (usePostgresStorage()) return pg.pgCheckRateLimit(bucket, max, windowMs);
+  return json.jsonCheckRateLimit(bucket, max, windowMs);
 }
 
 export async function createSettlement(
   input: Parameters<typeof pg.pgCreateSettlement>[0]
 ): Promise<pg.SettlementRecord> {
-  if (!usePostgres()) {
-    throw new Error("Settlements require DATABASE_URL (PostgreSQL)");
+  if (usePostgresStorage()) {
+    return pg.pgCreateSettlement(input);
   }
-  return pg.pgCreateSettlement(input);
+  const record: pg.SettlementRecord = {
+    ...input,
+    status: input.status ?? "pending",
+    createdAt: new Date().toISOString(),
+    verifiedAt: input.status === "verified" ? new Date().toISOString() : undefined,
+  };
+  return store.storeSaveSettlement(record);
 }
 
 export async function getSettlementById(id: string): Promise<pg.SettlementRecord | null> {
-  if (!usePostgres()) return null;
-  return pg.pgGetSettlementById(id);
+  if (usePostgresStorage()) return pg.pgGetSettlementById(id);
+  return store.storeGetSettlementById(id);
 }
 
 export async function getSettlementByUaTx(uaTransactionId: string): Promise<pg.SettlementRecord | null> {
-  if (!usePostgres()) return null;
-  return pg.pgGetSettlementByUaTx(uaTransactionId);
+  if (usePostgresStorage()) return pg.pgGetSettlementByUaTx(uaTransactionId);
+  return store.storeGetSettlementByUaTx(uaTransactionId);
 }
 
 export async function markSettlementVerified(
   id: string,
   txHash?: string
 ): Promise<pg.SettlementRecord | null> {
-  if (!usePostgres()) return null;
-  return pg.pgMarkSettlementVerified(id, txHash);
+  if (usePostgresStorage()) return pg.pgMarkSettlementVerified(id, txHash);
+  return store.storeMarkSettlementVerified(id, txHash);
 }

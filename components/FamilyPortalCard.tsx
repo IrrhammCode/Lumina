@@ -6,13 +6,14 @@ import { Copy, Share2, ExternalLink, Link2, Check, RefreshCw } from "lucide-reac
 import { useRouter } from "next/navigation";
 import LuminaLogo from "@/components/LuminaLogo";
 import MemberAvatar from "@/components/MemberAvatar";
+import { useAccount } from "@particle-network/connectkit";
 import {
-  getFamilyPortalUrl,
+  buildSignedPortalUrl,
   copyPortalUrl,
   sharePortalUrl,
   rotatePortalLink,
 } from "@/lib/portal";
-import { getPortalToken } from "@/lib/auth";
+import { getPortalToken, getStoredUser } from "@/lib/auth";
 import { getFamily } from "@/lib/family";
 import { portal } from "@/lib/copy";
 import { popIn } from "@/lib/motion";
@@ -24,20 +25,29 @@ type FamilyPortalCardProps = {
 
 export default function FamilyPortalCard({ variant = "card", memberId: initialMemberId }: FamilyPortalCardProps) {
   const router = useRouter();
+  const { connector } = useAccount();
   const [copied, setCopied] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const [hasToken, setHasToken] = useState(() => !!getPortalToken());
+  const [canShare, setCanShare] = useState(
+    () => !!getPortalToken() || !!getStoredUser()?.walletAddress
+  );
+  const [portalUrl, setPortalUrl] = useState("/ask");
   const [displayUrl, setDisplayUrl] = useState("lumina.app/ask");
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(initialMemberId ?? null);
   const members = getFamily();
 
   const refreshUrl = useCallback(() => {
-    setHasToken(!!getPortalToken());
-    setDisplayUrl(
-      getFamilyPortalUrl(selectedMemberId ?? undefined).replace(/^https?:\/\//, "")
-    );
-  }, [selectedMemberId]);
+    void (async () => {
+      setCanShare(!!getPortalToken() || !!getStoredUser()?.walletAddress);
+      const url = await buildSignedPortalUrl({
+        memberId: selectedMemberId ?? undefined,
+        connector,
+      });
+      setPortalUrl(url);
+      setDisplayUrl(url.replace(/^https?:\/\//, ""));
+    })();
+  }, [selectedMemberId, connector]);
 
   useEffect(() => {
     refreshUrl();
@@ -49,8 +59,8 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
   };
 
   const handleCopy = async () => {
-    if (!hasToken) return;
-    const ok = await copyPortalUrl(selectedMemberId ?? undefined);
+    if (!canShare) return;
+    const ok = await copyPortalUrl(selectedMemberId ?? undefined, connector);
     if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -69,9 +79,10 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
   };
 
   const previewPath = (() => {
-    const full = getFamilyPortalUrl(selectedMemberId ?? undefined);
     try {
-      return new URL(full).pathname + new URL(full).search;
+      const full = portalUrl.startsWith("http") ? portalUrl : `https://${portalUrl}`;
+      const u = new URL(full);
+      return u.pathname + u.search;
     } catch {
       return selectedMemberId ? `/ask?member=${selectedMemberId}` : "/ask";
     }
@@ -87,7 +98,7 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-ink">{portal.title}</p>
             <p className="text-caption text-xs truncate">
-              {hasToken ? displayUrl : portal.revokedHint}
+              {canShare ? displayUrl : portal.revokedHint}
             </p>
           </div>
         </div>
@@ -95,7 +106,7 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
           <button
             type="button"
             onClick={handleCopy}
-            disabled={!hasToken}
+            disabled={!canShare}
             className="btn-secondary btn-compact flex-1"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -103,8 +114,8 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
           </button>
           <button
             type="button"
-            onClick={() => sharePortalUrl(selectedMemberId ?? undefined)}
-            disabled={!hasToken}
+            onClick={() => sharePortalUrl(selectedMemberId ?? undefined, connector)}
+            disabled={!canShare}
             className="btn-primary btn-compact flex-1"
           >
             <Share2 size={14} />
@@ -139,7 +150,7 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-ink">{portal.title}</p>
-          <p className="text-caption text-xs">{hasToken ? portal.sub : portal.revokedHint}</p>
+          <p className="text-caption text-xs">{canShare ? portal.sub : portal.revokedHint}</p>
         </div>
         <button
           type="button"
@@ -181,18 +192,18 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
 
       <div className="portal-url-box">
         <p className="portal-url-label">{portal.linkLabel}</p>
-        <p className="portal-url-value">{hasToken ? displayUrl : portal.revoked}</p>
+        <p className="portal-url-value">{canShare ? displayUrl : portal.revoked}</p>
       </div>
 
       <div className="portal-card-actions">
-        <button type="button" onClick={handleCopy} disabled={!hasToken} className="btn-secondary flex-1">
+        <button type="button" onClick={handleCopy} disabled={!canShare} className="btn-secondary flex-1">
           {copied ? <Check size={16} /> : <Copy size={16} />}
           {copied ? portal.copied : portal.copy}
         </button>
         <button
           type="button"
-          onClick={() => sharePortalUrl(selectedMemberId ?? undefined)}
-          disabled={!hasToken}
+          onClick={() => sharePortalUrl(selectedMemberId ?? undefined, connector)}
+          disabled={!canShare}
           className="btn-secondary flex-1"
         >
           <Share2 size={16} />
@@ -201,7 +212,7 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
         <button
           type="button"
           onClick={() => router.push(previewPath)}
-          disabled={!hasToken}
+          disabled={!canShare}
           className="btn-ghost flex-1"
         >
           <ExternalLink size={16} />

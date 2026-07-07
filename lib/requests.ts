@@ -101,10 +101,18 @@ export async function createRequest(input: {
   billNote: string;
   source: RequestSource;
   portalToken?: string;
+  portalCap?: string;
+  portalSig?: string;
 }): Promise<CareRequest> {
-  if (input.source === "family" && input.portalToken) {
+  const hasPortalAuth =
+    input.source === "family" &&
+    (input.portalCap && input.portalSig ? true : Boolean(input.portalToken));
+
+  if (hasPortalAuth) {
     const remote = await api.createPortalRequest({
       token: input.portalToken,
+      cap: input.portalCap,
+      sig: input.portalSig,
       memberId: input.memberId,
       needType: input.needType,
       title: input.title,

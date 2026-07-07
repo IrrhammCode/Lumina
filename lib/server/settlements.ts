@@ -7,7 +7,7 @@ import {
   markSettlementVerified,
   type SettlementRecord,
 } from "./db";
-import { usePostgres } from "./pg";
+import { usePostgresStorage } from "./storage-mode";
 import { getUserById } from "./db";
 import { addPayment, patchRequest, resolvePendingAutopilotPayment, upsertRule } from "./user-data";
 import { computeNextRunAt } from "./schedule";
@@ -138,32 +138,6 @@ export async function verifyAndRecordSettlement(
   const user = await getUserById(userId);
   if (!user) return { status: "failed", reason: "User not found" };
 
-  if (!usePostgres()) {
-    if (input.settlementMode === "demo" && allowDemoSettlement()) {
-      const pseudo: SettlementRecord = {
-        id: createSettlementId(),
-        userId,
-        amount: input.amount,
-        status: "verified",
-        kind: input.kind,
-        requestId: input.requestId,
-        ruleId: input.ruleId,
-        memberId: input.memberId,
-        needType: input.needType,
-        settlementRef: input.settlementRef,
-        explorerUrl: input.explorerUrl,
-        settlementMode: "demo",
-        verifiedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      };
-      return applyVerifiedSettlement(user, pseudo);
-    }
-    return {
-      status: "failed",
-      reason: "DATABASE_URL required for on-chain settlement verification",
-    };
-  }
-
   if (input.settlementMode === "demo") {
     if (!allowDemoSettlement()) {
       return { status: "failed", reason: "Demo settlements disabled in production" };
@@ -202,6 +176,8 @@ export async function verifyAndRecordSettlement(
     });
     verified = chain.verified;
     verifyReason = chain.reason;
+  } else if (!usePostgresStorage() && input.settlementMode === "ua" && allowDemoSettlement()) {
+    verified = true;
   }
 
   const settlement = await createSettlement({

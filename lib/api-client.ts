@@ -273,14 +273,22 @@ export const api = {
     });
   },
 
-  getPortalMember(token: string, memberId: string) {
-    return apiFetch<{ member: FamilyMember }>(
-      `/api/portal/member?token=${encodeURIComponent(token)}&member=${encodeURIComponent(memberId)}`
+  getPortalMember(input: {
+    memberId: string;
+    token?: string;
+    cap?: string;
+    sig?: string;
+  }) {
+    const params = new URLSearchParams({ member: input.memberId });
+    if (input.token) params.set("token", input.token);
+    if (input.cap) params.set("cap", input.cap);
+    if (input.sig) params.set("sig", input.sig);
+    return apiFetch<{ member: FamilyMember; sponsor?: string }>(
+      `/api/portal/member?${params}`
     );
   },
 
   createPortalRequest(input: {
-    token: string;
     memberId: string;
     needType: NeedType;
     title: string;
@@ -288,6 +296,9 @@ export const api = {
     amount: number;
     dueLabel: string;
     billNote: string;
+    token?: string;
+    cap?: string;
+    sig?: string;
   }) {
     return apiFetch<{ request: CareRequest }>("/api/portal/requests", {
       method: "POST",

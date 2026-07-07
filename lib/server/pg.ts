@@ -1,10 +1,11 @@
 import { Pool, type QueryResultRow } from "pg";
+import { usePostgresStorage } from "./storage-mode";
 
 let pool: Pool | null = null;
 let schemaReady: Promise<void> | null = null;
 
 export function usePostgres(): boolean {
-  return Boolean(process.env.DATABASE_URL);
+  return usePostgresStorage();
 }
 
 function getPool(): Pool {

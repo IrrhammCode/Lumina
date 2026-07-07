@@ -59,6 +59,8 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
   const [dueDays, setDueDays] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [portalToken, setPortalToken] = useState<string | null>(null);
+  const [portalCap, setPortalCap] = useState<string | null>(null);
+  const [portalSig, setPortalSig] = useState<string | null>(null);
 
   const family = getFamily().filter(
     (m) =>
@@ -78,7 +80,11 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
     if (isFamily) {
       const memberId = searchParams.get("member");
       const token = searchParams.get("token");
+      const cap = searchParams.get("cap");
+      const sig = searchParams.get("sig");
       if (token) setPortalToken(token);
+      if (cap) setPortalCap(cap);
+      if (sig) setPortalSig(sig);
 
       const applyMember = (m: FamilyMember) => {
         setMember(m);
@@ -88,10 +94,12 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
         setStep("what");
       };
 
-      if (memberId && token) {
-        void api.getPortalMember(token, memberId).then((res) => {
-          if (res.ok) applyMember(res.data.member);
-        });
+      if (memberId && (cap && sig || token)) {
+        void api
+          .getPortalMember({ memberId, token: token ?? undefined, cap: cap ?? undefined, sig: sig ?? undefined })
+          .then((res) => {
+            if (res.ok) applyMember(res.data.member);
+          });
       } else if (memberId) {
         const m = getMemberById(memberId);
         if (m) applyMember(m);
@@ -138,6 +146,8 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
       billNote: billNote.trim(),
       source: mode,
       portalToken: portalToken ?? undefined,
+      portalCap: portalCap ?? undefined,
+      portalSig: portalSig ?? undefined,
     });
     setSubmitting(false);
     setStep("done");
