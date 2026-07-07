@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Loader2, Wallet, RefreshCw } from "lucide-react";
 import { useAccount, useModal } from "@particle-network/connectkit";
+import Web2SignInPanel from "@/components/Web2SignInPanel";
 import type { Connector } from "@particle-network/connector-core";
 import AuthShell from "@/components/AuthShell";
 import { getPostLoginPath } from "@/lib/auth";
@@ -85,8 +86,8 @@ function WalletLoginBoot() {
   return (
     <AuthShell
       variant="login"
-      title={auth.walletBootTitle}
-      subtitle={auth.walletBootSub}
+      title={auth.signIn}
+      subtitle={auth.signInSub}
       onBack={() => router.back()}
     >
       <div className="auth-wallet-panel">
@@ -156,9 +157,9 @@ function WalletLoginParticle() {
       try {
         const ok = await siweWithConnector(address, connector);
         if (ok) router.replace(getPostLoginPath());
-        else setError("Wallet sign-in failed");
+        else setError("Sign-in failed — try again");
       } catch {
-        setError("Wallet signature was rejected");
+        setError("Sign-in was cancelled");
       } finally {
         setIsLoading(false);
         signingRef.current = false;
@@ -166,31 +167,23 @@ function WalletLoginParticle() {
     })();
   }, [isConnected, address, connector, router]);
 
-  const onConnect = () => {
+  const onWallet = () => {
     setError("");
     setIsLoading(true);
     try {
       setOpen(true);
     } catch {
-      setError("Could not open wallet modal — try again");
+      setError("Could not open wallet picker — try again");
     } finally {
       setTimeout(() => setIsLoading(false), 800);
     }
   };
 
   return (
-    <AuthShell variant="login" title={auth.signIn} subtitle={auth.signInSubWeb3} onBack={() => router.back()}>
-      <motion.div key="wallet" initial={false} animate={{ opacity: 1, x: 0 }}>
-        <div className="auth-wallet-panel">
-          <div className="auth-wallet-icon">
-            <Wallet size={26} className="text-glow" />
-          </div>
-          <p className="auth-wallet-hint">{auth.walletHintWeb3}</p>
-          <button type="button" onClick={onConnect} disabled={isLoading} className="btn-primary auth-wallet-cta">
-            {isLoading ? <Loader2 size={18} className="animate-spin" /> : auth.walletCta}
-          </button>
-        </div>
-        <p className="auth-terms">{auth.termsWeb3}</p>
+    <AuthShell variant="login" title={auth.signIn} subtitle={auth.signInSub} onBack={() => router.back()}>
+      <motion.div key="web2" initial={false} animate={{ opacity: 1, x: 0 }}>
+        <Web2SignInPanel disabled={isLoading} onWallet={onWallet} />
+        <p className="auth-terms">{auth.terms}</p>
         {error && <p className="text-negative text-xs text-center mt-3">{error}</p>}
       </motion.div>
     </AuthShell>

@@ -11,9 +11,24 @@ const config = createConfig({
   projectId: process.env.NEXT_PUBLIC_PROJECT_ID!,
   clientKey: process.env.NEXT_PUBLIC_CLIENT_KEY!,
   appId: process.env.NEXT_PUBLIC_APP_ID!,
+  appearance: {
+    mode: "light",
+    connectorsOrder: ["social", "email", "phone", "wallet"],
+    splitEmailAndPhone: false,
+    hideContinueButton: false,
+    collapseWalletList: true,
+    theme: {
+      "--pcm-accent-color": "#2a5a18",
+      "--pcm-primary-button-bankground": "#163300",
+      "--pcm-primary-button-hover-background": "#1e4d0e",
+      "--pcm-body-background": "#E8EBE6",
+      "--pcm-rounded-md": "12px",
+      "--pcm-rounded-lg": "16px",
+    },
+  },
   walletConnectors: [
     authWalletConnectors({
-      authTypes: ["google", "apple", "email", "phone"],
+      authTypes: ["google", "apple", "email"],
       fiatCoin: "USD",
       promptSettingConfig: {
         promptMasterPasswordSettingWhenLogin: 0,

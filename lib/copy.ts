@@ -464,10 +464,16 @@ export const onboarding = {
 };
 
 export const auth = {
-  signIn: "Connect wallet",
-  badge: "Web3",
-  signInSub: "Same account on every device.",
+  signIn: "Create account",
+  badge: "Secure",
+  signInSub: "Continue with Google or Apple — same as any app you trust.",
   signInSubWeb3: "Sign in with your wallet — no email, no password.",
+  googleCta: "Continue with Google",
+  appleCta: "Continue with Apple",
+  emailCta: "Continue with email",
+  orDivider: "or",
+  walletSecondary: "Use an existing crypto wallet",
+  web2Footnote: "We create a secure wallet behind the scenes — no seed phrase to remember.",
   otpTitle: "Check your inbox",
   otpSub: (email: string) => `We sent a code to ${email}`,
   otpHint: "Enter the 6-digit code we sent",
@@ -489,7 +495,7 @@ export const auth = {
 };
 
 export const welcome = {
-  trust: "Universal Account · cross-chain care",
+  trust: "Sign in with Google or Apple · wallet secured for you",
   features: [
     "School fees & bills — requested from home",
     "Autopilot for pulsa and recurring care",
