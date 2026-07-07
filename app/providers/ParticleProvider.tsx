@@ -8,6 +8,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import BiometricUnlockGate from "@/components/BiometricUnlockGate";
 import SessionHydrator from "@/components/SessionHydrator";
 import { hasParticleConfig } from "@/lib/particle-config";
 
@@ -75,7 +76,9 @@ export default function ParticleProvider({
 
   const shell = (
     <ConnectKitStatusContext.Provider value={status}>
-      <SessionHydrator>{children}</SessionHydrator>
+      <SessionHydrator>
+        <BiometricUnlockGate>{children}</BiometricUnlockGate>
+      </SessionHydrator>
     </ConnectKitStatusContext.Provider>
   );
 

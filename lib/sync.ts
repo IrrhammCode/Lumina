@@ -4,7 +4,9 @@ import type { LuminaUser } from "./auth";
 import { cacheUser, setOnboardedFromServer } from "./auth";
 import { clearGraphMeta, saveGraphMeta } from "./graph-meta";
 import { hasMagicConfig } from "./magic-config";
+import { clearBiometricUnlock } from "./biometric-unlock";
 import { getMagicDidToken, isMagicLoggedIn, logoutMagic } from "./magic";
+import { syncPasskeyStatus } from "./webauthn-client";
 import { emitNewRequest } from "./events";
 import { notifyAutopilotQueue, notifyNewRequest } from "./notifications";
 import { getPendingRequests, getRequests, type CareRequest } from "./requests";
@@ -115,6 +117,7 @@ export async function loginAndHydrate(
 ): Promise<void> {
   persistAuthUser(user);
   await hydrateFromServer();
+  void syncPasskeyStatus();
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("lumina:login"));
   }
@@ -157,6 +160,7 @@ export async function logoutFromServer(): Promise<void> {
   if (hasMagicConfig()) {
     await logoutMagic();
   }
+  clearBiometricUnlock();
   if (typeof window !== "undefined") {
     localStorage.removeItem(SERVER_BACKED_KEY);
     clearGraphMeta();

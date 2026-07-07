@@ -1,15 +1,22 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Fingerprint, X, Check } from "lucide-react";
-import { useState, useEffect } from "react";
-import { sheetBackdrop, sheetPanel, springSnappy, tweenBase } from "@/lib/motion";
+import { Fingerprint, X, Check, AlertCircle } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { sheetBackdrop, sheetPanel, springSnappy } from "@/lib/motion";
 import { bio } from "@/lib/copy";
 import { getPrefs } from "@/lib/prefs";
 import { hasParticleConfig } from "@/lib/particle-config";
 import { hasMagicConfig } from "@/lib/magic-config";
 import { useLuminaUA } from "@/app/providers/UniversalAccountProvider";
 import { Sparkles } from "lucide-react";
+import {
+  authenticatePasskey,
+  detectBiometricLabel,
+  getLocalPasskeyEnrolled,
+  isPlatformBiometricAvailable,
+  type BiometricPurpose,
+} from "@/lib/webauthn-client";
 
 type BiometricContext = "approve" | "activate" | "pay" | "default";
 
@@ -29,6 +36,13 @@ const CONTEXT_COPY = {
   default: bio.default,
 };
 
+const CONTEXT_PURPOSE: Record<BiometricContext, BiometricPurpose> = {
+  approve: "approve",
+  activate: "activate",
+  pay: "pay",
+  default: "default",
+};
+
 export default function BiometricPrompt({
   isOpen,
   onConfirm,
@@ -38,9 +52,14 @@ export default function BiometricPrompt({
   context = "default",
 }: BiometricPromptProps) {
   const copy = CONTEXT_COPY[context];
+  const purpose = CONTEXT_PURPOSE[context];
   const { isUaMode, isMagicMode } = useLuminaUA();
   const [scanning, setScanning] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [useFallback, setUseFallback] = useState(false);
+  const attemptedRef = useRef(false);
+  const label = detectBiometricLabel();
 
   const biometricEnabled = isOpen ? getPrefs().biometricEnabled : true;
   const settlementHint = isMagicMode
@@ -51,24 +70,69 @@ export default function BiometricPrompt({
         ? bio.magicHint
         : undefined;
 
+  const confirmSuccess = useCallback(() => {
+    setSuccess(true);
+    setTimeout(() => onConfirm(), 550);
+  }, [onConfirm]);
+
+  const runVerification = useCallback(async () => {
+    if (scanning || success) return;
+    setScanning(true);
+    setError(null);
+
+    const enrolled = getLocalPasskeyEnrolled();
+    const platformAvailable = await isPlatformBiometricAvailable();
+
+    if (!enrolled || !platformAvailable || useFallback) {
+      setScanning(false);
+      setUseFallback(true);
+      return;
+    }
+
+    const result = await authenticatePasskey(purpose);
+    setScanning(false);
+
+    if (result.ok) {
+      confirmSuccess();
+      return;
+    }
+
+    setError(result.error);
+    setUseFallback(true);
+  }, [scanning, success, useFallback, purpose, confirmSuccess]);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      attemptedRef.current = false;
+      return;
+    }
     if (!getPrefs().biometricEnabled) {
       onConfirm();
       return;
     }
     setScanning(false);
     setSuccess(false);
-  }, [isOpen]);
+    setError(null);
+    setUseFallback(false);
+    attemptedRef.current = false;
+  }, [isOpen, onConfirm]);
 
-  const handleScan = () => {
+  useEffect(() => {
+    if (!isOpen || !biometricEnabled || attemptedRef.current) return;
+    attemptedRef.current = true;
+    const t = setTimeout(() => void runVerification(), 350);
+    return () => clearTimeout(t);
+  }, [isOpen, biometricEnabled, runVerification]);
+
+  const handleFallbackTap = () => {
     setScanning(true);
     setTimeout(() => {
       setScanning(false);
-      setSuccess(true);
-      setTimeout(() => onConfirm(), 550);
-    }, 1200);
+      confirmSuccess();
+    }, 800);
   };
+
+  const title = copy.title.replace("Face ID", label);
 
   return (
     <AnimatePresence>
@@ -108,7 +172,7 @@ export default function BiometricPrompt({
                   {bio.magicBadge}
                 </span>
               )}
-              <h3 className="text-title text-lg">{copy.title}</h3>
+              <h3 className="text-title text-lg">{title}</h3>
               {amount && recipient && (
                 <div>
                   <p className="text-amount text-3xl">{amount}</p>
@@ -124,7 +188,7 @@ export default function BiometricPrompt({
                   </>
                 )}
                 <motion.button
-                  onClick={handleScan}
+                  onClick={useFallback ? handleFallbackTap : () => void runVerification()}
                   disabled={scanning || success}
                   whileTap={{ scale: 0.94 }}
                   animate={{
@@ -140,6 +204,10 @@ export default function BiometricPrompt({
                       <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={springSnappy}>
                         <Check size={28} strokeWidth={3} />
                       </motion.span>
+                    ) : error ? (
+                      <motion.span key="error" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={springSnappy}>
+                        <AlertCircle size={26} />
+                      </motion.span>
                     ) : (
                       <motion.span key="finger" animate={scanning ? { opacity: [1, 0.5, 1] } : { opacity: 1 }} transition={{ duration: 0.8, repeat: scanning ? Infinity : 0 }}>
                         <Fingerprint size={28} />
@@ -153,7 +221,15 @@ export default function BiometricPrompt({
                 <p className="text-caption text-xs bio-settlement-hint">{settlementHint}</p>
               )}
               <p className="text-caption text-sm">
-                {success ? copy.success : scanning ? bio.scanning : bio.tap}
+                {success
+                  ? copy.success
+                  : scanning
+                    ? bio.verifying(label)
+                    : error
+                      ? bio.error
+                      : useFallback
+                        ? bio.fallback
+                        : bio.tapBiometric(label)}
               </p>
             </div>
           </motion.div>

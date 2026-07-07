@@ -25,6 +25,7 @@ import IpfsGraphProof from "@/components/IpfsGraphProof";
 import CareCompass from "@/components/CareCompass";
 import MagicMoment from "@/components/MagicMoment";
 import MagicCareCard from "@/components/MagicCareCard";
+import BiometricEnrollBanner from "@/components/BiometricEnrollBanner";
 import MagicFirstSendBanner from "@/components/MagicFirstSendBanner";
 import MagicFundBanner from "@/components/MagicFundBanner";
 import EmptyInbox from "@/components/EmptyInbox";
@@ -295,6 +296,8 @@ export default function DashboardPage() {
         </AnimatePresence>
 
         <QuickActions pendingCount={pending.length} variant="row" />
+
+        <BiometricEnrollBanner />
 
         {isMagicMode && <MagicFundBanner />}
 

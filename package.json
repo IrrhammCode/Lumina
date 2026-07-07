@@ -16,6 +16,8 @@
     "@magic-sdk/admin": "^2.8.2",
     "@particle-network/connectkit": "^3.0.0-alpha.5",
     "@particle-network/universal-account-sdk": "^2.0.3",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.2",
     "@types/pg": "^8.20.0",
     "encoding": "^0.1.13",
     "ethers": "^6.17.0",

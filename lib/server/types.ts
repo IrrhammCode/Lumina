@@ -5,6 +5,15 @@ import type { CareRequest } from "@/lib/requests";
 
 export type AuthProvider = "wallet" | "google" | "apple" | "email" | "magic";
 
+export type PasskeyCredential = {
+  id: string;
+  publicKey: string;
+  counter: number;
+  deviceName?: string;
+  createdAt: string;
+  transports?: string[];
+};
+
 export type UserRecord = {
   id: string;
   email: string;
@@ -21,6 +30,7 @@ export type UserRecord = {
   seeded: boolean;
   graphCid?: string;
   carePledgeRef?: string;
+  passkeys?: PasskeyCredential[];
 };
 
 export type OtpRecord = {

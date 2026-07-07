@@ -14,6 +14,7 @@ import { hasMagicConfig } from "@/lib/magic-config";
 import { slideForward, slideBack, fadeScale } from "@/lib/motion";
 import { defaultFamily, getFamily, setFamily, type FamilyMember } from "@/lib/family";
 import { onboarding, family, portal } from "@/lib/copy";
+import { detectBiometricLabel } from "@/lib/webauthn-client";
 import MemberAvatar from "@/components/MemberAvatar";
 import FamilyPortalCard from "@/components/FamilyPortalCard";
 import OnboardingPledge from "./OnboardingPledge";
@@ -21,8 +22,9 @@ import OnboardingFamilyInsight from "./OnboardingFamilyInsight";
 
 const OnboardingWalletStep = dynamic(() => import("./OnboardingWalletStep"), { ssr: false });
 const OnboardingMagicWalletStep = dynamic(() => import("./OnboardingMagicWalletStep"), { ssr: false });
+const OnboardingBiometricStep = dynamic(() => import("./OnboardingBiometricStep"), { ssr: false });
 
-type Step = "welcome" | "wallet" | "family" | "ready";
+type Step = "welcome" | "wallet" | "biometric" | "family" | "ready";
 const SUGGESTED = defaultFamily.slice(0, 3);
 
 export default function OnboardingPage() {
@@ -30,10 +32,11 @@ export default function OnboardingPage() {
   const isMagicOnboarding = hasMagicConfig();
   const isUaOnboarding = hasParticleConfig() && !isMagicOnboarding;
   const stepOrder = useMemo<Step[]>(
-    () =>
-      isMagicOnboarding || isUaOnboarding
-        ? ["welcome", "wallet", "family", "ready"]
-        : ["welcome", "family", "ready"],
+    () => {
+      if (isMagicOnboarding) return ["welcome", "wallet", "biometric", "family", "ready"];
+      if (isUaOnboarding) return ["welcome", "wallet", "family", "ready"];
+      return ["welcome", "family", "ready"];
+    },
     [isMagicOnboarding, isUaOnboarding]
   );
 
@@ -42,6 +45,7 @@ export default function OnboardingPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [customName, setCustomName] = useState("");
   const [customRelation, setCustomRelation] = useState("");
+  const [biometricDone, setBiometricDone] = useState(false);
 
   useEffect(() => {
     if (!getStoredUser()?.loggedIn) {
@@ -102,9 +106,12 @@ export default function OnboardingPage() {
 
   if (!ready) return <PageLoading />;
 
+  const bioLabel = detectBiometricLabel();
+
   const titles: Record<Step, string> = {
     welcome: onboarding.welcomeTitle,
     wallet: isMagicOnboarding ? onboarding.magicWalletHeadline : onboarding.walletTitle,
+    biometric: onboarding.biometricTitle(bioLabel),
     family: onboarding.familySub,
     ready: onboarding.readyTitle,
   };
@@ -112,6 +119,7 @@ export default function OnboardingPage() {
   const subs: Record<Step, string> = {
     welcome: onboarding.welcomeSub,
     wallet: isMagicOnboarding ? onboarding.magicWalletSub : onboarding.walletSub,
+    biometric: onboarding.biometricSub,
     family: "",
     ready: onboarding.readySub(selected.length || SUGGESTED.length),
   };
@@ -124,6 +132,10 @@ export default function OnboardingPage() {
     ) : step === "wallet" ? (
       <button type="button" onClick={goNext} className="btn-primary">
         {onboarding.ctaWallet}
+      </button>
+    ) : step === "biometric" ? (
+      <button type="button" onClick={goNext} disabled={!biometricDone} className="btn-primary">
+        {onboarding.ctaBiometric}
       </button>
     ) : step === "family" ? (
       <button type="button" onClick={goNext} disabled={selected.length === 0} className="btn-primary">
@@ -149,7 +161,7 @@ export default function OnboardingPage() {
       }
       onBack={goBack}
       footer={footer}
-      panel={step === "welcome" || step === "ready" || step === "wallet"}
+      panel={step === "welcome" || step === "ready" || step === "wallet" || step === "biometric"}
       theme="onboarding"
       onboardingBrandLabel={onboarding.brand}
     >
@@ -176,6 +188,14 @@ export default function OnboardingPage() {
         {step === "wallet" && isUaOnboarding && (
           <motion.div key="wallet-ua" variants={slideForward} initial="initial" animate="animate" exit="exit">
             <OnboardingWalletStep />
+          </motion.div>
+        )}
+        {step === "biometric" && isMagicOnboarding && (
+          <motion.div key="biometric" variants={slideForward} initial="initial" animate="animate" exit="exit">
+            <OnboardingBiometricStep
+              onEnrolled={() => setBiometricDone(true)}
+              onSkipped={() => setBiometricDone(true)}
+            />
           </motion.div>
         )}
         {step === "family" && (

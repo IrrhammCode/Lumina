@@ -1,3 +1,9 @@
+import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+} from "@simplewebauthn/browser";
 import type { AllowanceRule, NeedType, PaymentRecord } from "./allowances";
 import type { FamilyMember } from "./family";
 import type { LuminaPrefs } from "./prefs";
@@ -101,6 +107,61 @@ export const api = {
 
   logout() {
     return apiFetch<{ loggedOut: boolean }>("/api/auth/logout", { method: "POST" });
+  },
+
+  webauthnStatus() {
+    return apiFetch<{ enrolled: boolean; count: number; devices: string[] }>(
+      "/api/auth/webauthn/status"
+    );
+  },
+
+  webauthnRegisterOptions() {
+    return apiFetch<{
+      options: PublicKeyCredentialCreationOptionsJSON;
+      challengeToken: string;
+    }>("/api/auth/webauthn/register/options", { method: "POST" });
+  },
+
+  webauthnRegisterVerify(
+    response: RegistrationResponseJSON,
+    challengeToken: string,
+    deviceName?: string
+  ) {
+    return apiFetch<{ enrolled: boolean; deviceName?: string }>(
+      "/api/auth/webauthn/register/verify",
+      {
+        method: "POST",
+        body: JSON.stringify({ response, challengeToken, deviceName }),
+      }
+    );
+  },
+
+  webauthnAuthOptions(purpose: string) {
+    return apiFetch<{
+      options: PublicKeyCredentialRequestOptionsJSON;
+      challengeToken: string;
+    }>("/api/auth/webauthn/auth/options", {
+      method: "POST",
+      body: JSON.stringify({ purpose }),
+    });
+  },
+
+  webauthnAuthVerify(
+    response: AuthenticationResponseJSON,
+    challengeToken: string,
+    purpose?: string
+  ) {
+    return apiFetch<{ verified: boolean; purpose?: string }>(
+      "/api/auth/webauthn/auth/verify",
+      {
+        method: "POST",
+        body: JSON.stringify({ response, challengeToken, purpose }),
+      }
+    );
+  },
+
+  webauthnRemove() {
+    return apiFetch<{ removed: boolean }>("/api/auth/webauthn", { method: "DELETE" });
   },
 
   getUserData() {

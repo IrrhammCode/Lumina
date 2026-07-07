@@ -1,5 +1,6 @@
 import { api } from "./api-client";
 import { isLoggedIn } from "./auth";
+import { detectBiometricLabel } from "./webauthn-client";
 
 export type LuminaPrefs = {
   notifyRequests: boolean;
@@ -48,5 +49,6 @@ export function notificationsLabel(): string {
 }
 
 export function securityLabel(): string {
-  return getPrefs().biometricEnabled ? "Face ID" : "Off";
+  if (!getPrefs().biometricEnabled) return "Off";
+  return detectBiometricLabel();
 }
