@@ -8,25 +8,36 @@ import AuthShell from "@/components/AuthShell";
 import { isLoggedIn, getPostLoginPath } from "@/lib/auth";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { welcome } from "@/lib/copy";
+import { preloadConnectKit } from "@/lib/connectkit-preload";
+import { hasParticleConfig } from "@/lib/particle-config";
 
 const FEATURE_ICONS = [Inbox, Repeat, Bell];
 
 export default function WelcomePage() {
   const router = useRouter();
-  useEffect(() => { if (isLoggedIn()) router.replace(getPostLoginPath()); }, [router]);
+
+  useEffect(() => {
+    if (isLoggedIn()) router.replace(getPostLoginPath());
+    if (hasParticleConfig()) preloadConnectKit();
+  }, [router]);
+
+  const goLogin = () => {
+    preloadConnectKit();
+    router.push("/login");
+  };
 
   return (
     <AuthShell
       variant="welcome"
       footer={
         <>
-          <button onClick={() => router.push("/login")} className="btn-primary py-4">
+          <button type="button" onClick={goLogin} className="btn-primary py-4">
             {welcome.cta}
             <ArrowRight size={18} />
           </button>
           <button
             type="button"
-            onClick={() => router.push("/login")}
+            onClick={goLogin}
             className="auth-signin-link"
           >
             {welcome.signIn}

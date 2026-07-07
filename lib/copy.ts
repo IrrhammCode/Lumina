@@ -481,6 +481,11 @@ export const auth = {
   terms: "By continuing you accept our Terms and Privacy Policy.",
   termsWeb3: "On-chain care hub. Identity = your wallet. Payments settle on Arbitrum.",
   hasAccount: "Already signed in before?",
+  walletBootTitle: "Preparing wallet sign-in",
+  walletBootSub: "Loading secure connection — one moment.",
+  walletBootRetry: "Retry",
+  walletBootHint: "Taking longer than usual? Check your connection and tap Retry.",
+  walletBootDevHint: "Dev: enter any 0x address below, or run npm run preview:mobile on your Mac.",
 };
 
 export const welcome = {

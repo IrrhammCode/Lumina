@@ -1,13 +1,36 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import SessionHydrator from "@/components/SessionHydrator";
 import { hasParticleConfig } from "@/lib/particle-config";
 
-const ConnectKitReadyContext = createContext(false);
+type ConnectKitStatus = {
+  ready: boolean;
+  loading: boolean;
+  error: boolean;
+  retry: () => void;
+};
+
+const ConnectKitStatusContext = createContext<ConnectKitStatus>({
+  ready: false,
+  loading: false,
+  error: false,
+  retry: () => {},
+});
 
 export function useConnectKitReady(): boolean {
-  return useContext(ConnectKitReadyContext);
+  return useContext(ConnectKitStatusContext).ready;
+}
+
+export function useConnectKitStatus(): ConnectKitStatus {
+  return useContext(ConnectKitStatusContext);
 }
 
 export default function ParticleProvider({
@@ -19,18 +42,40 @@ export default function ParticleProvider({
   const [ConnectKit, setConnectKit] = useState<React.ComponentType<{
     children: React.ReactNode;
   }> | null>(null);
+  const [loading, setLoading] = useState(particleEnabled);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  const loadConnectKit = useCallback(() => {
     if (!particleEnabled) return;
+    setLoading(true);
+    setError(false);
     void import("./ConnectKitProviderInner")
       .then((mod) => setConnectKit(() => mod.default))
-      .catch((err) => console.error("ConnectKit failed to load:", err));
+      .catch((err) => {
+        console.error("ConnectKit failed to load:", err);
+        setError(true);
+      })
+      .finally(() => setLoading(false));
   }, [particleEnabled]);
 
+  useEffect(() => {
+    loadConnectKit();
+  }, [loadConnectKit]);
+
+  const status = useMemo<ConnectKitStatus>(
+    () => ({
+      ready: Boolean(ConnectKit),
+      loading,
+      error,
+      retry: loadConnectKit,
+    }),
+    [ConnectKit, loading, error, loadConnectKit]
+  );
+
   const shell = (
-    <ConnectKitReadyContext.Provider value={Boolean(ConnectKit)}>
+    <ConnectKitStatusContext.Provider value={status}>
       <SessionHydrator>{children}</SessionHydrator>
-    </ConnectKitReadyContext.Provider>
+    </ConnectKitStatusContext.Provider>
   );
 
   if (!particleEnabled || !ConnectKit) return shell;
