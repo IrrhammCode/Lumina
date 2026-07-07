@@ -2,6 +2,7 @@
 
 import { ExternalLink, Wallet } from "lucide-react";
 import { useMagicWallet } from "@/app/providers/MagicWalletProvider";
+import { isTestnetMode } from "@/lib/chain-config";
 import { magicFund } from "@/lib/copy";
 
 export default function MagicFundBanner() {
@@ -9,9 +10,17 @@ export default function MagicFundBanner() {
 
   if (!isMagicMode || !address) return null;
 
+  const testnet = isTestnetMode();
   const needsUsdt = balanceUsd == null || balanceUsd < 1;
   const needsGas = !hasGas;
   if (!needsUsdt && !needsGas) return null;
+
+  const fund = testnet ? magicFund.testnet : magicFund;
+  const fundHref = testnet
+    ? needsUsdt
+      ? "https://faucet.circle.com/"
+      : "https://www.alchemy.com/faucets/ethereum-sepolia"
+    : "https://bridge.arbitrum.io";
 
   return (
     <div className="magic-fund-banner">
@@ -19,22 +28,22 @@ export default function MagicFundBanner() {
         <Wallet size={18} />
       </div>
       <div className="magic-fund-text">
-        <p className="magic-fund-title">{magicFund.title}</p>
+        <p className="magic-fund-title">{fund.title}</p>
         <p className="magic-fund-sub">
           {needsUsdt && needsGas
-            ? magicFund.subBoth
+            ? fund.subBoth
             : needsUsdt
-              ? magicFund.subUsdt
-              : magicFund.subGas}
+              ? fund.subUsdt
+              : fund.subGas}
         </p>
       </div>
       <a
-        href="https://bridge.arbitrum.io"
+        href={fundHref}
         target="_blank"
         rel="noopener noreferrer"
         className="magic-fund-link"
       >
-        {magicFund.bridge}
+        {fund.bridge}
         <ExternalLink size={14} aria-hidden />
       </a>
     </div>

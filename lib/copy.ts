@@ -469,6 +469,13 @@ export const magicFund = {
   subGas: "Add a little ETH on Arbitrum for transaction gas.",
   subBoth: "Add USDT + a small amount of ETH on Arbitrum to send care.",
   bridge: "Bridge to Arbitrum",
+  testnet: {
+    title: "Fund test wallet (free)",
+    subUsdt: "Get free test USDC from Circle faucet (Sepolia).",
+    subGas: "Get free Sepolia ETH from Alchemy faucet.",
+    subBoth: "Get free Sepolia ETH + test USDC — no real money.",
+    bridge: "Free faucet",
+  },
 };
 
 export const magicFirstSend = {

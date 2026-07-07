@@ -1,17 +1,20 @@
 import { createPublicClient, decodeEventLog, http, parseAbiItem, type Hash } from "viem";
-import { arbitrum } from "viem/chains";
+import { arbitrum, sepolia } from "viem/chains";
+import { getChainConfig } from "@/lib/chain-config";
 import { getCarePayoutAddress } from "@/lib/particle-config";
-
-const USDT_ARBITRUM = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9" as const;
-const USDT_DECIMALS = 6;
 
 const transferEvent = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)"
 );
 
-function getArbitrumClient() {
-  const rpc = process.env.ARBITRUM_RPC_URL ?? "https://arb1.arbitrum.io/rpc";
-  return createPublicClient({ chain: arbitrum, transport: http(rpc) });
+function getSettlementClient() {
+  const chain = getChainConfig();
+  const rpc =
+    chain.mode === "testnet"
+      ? (process.env.SEPOLIA_RPC_URL ?? chain.rpcUrl)
+      : (process.env.ARBITRUM_RPC_URL ?? chain.rpcUrl);
+  const viemChain = chain.mode === "testnet" ? sepolia : arbitrum;
+  return createPublicClient({ chain: viemChain, transport: http(rpc) });
 }
 
 export async function verifyArbitrumUsdtTransfer(input: {
@@ -21,18 +24,19 @@ export async function verifyArbitrumUsdtTransfer(input: {
 }): Promise<{ verified: boolean; reason?: string }> {
   try {
     const hash = input.txHash as Hash;
-    const client = getArbitrumClient();
+    const chain = getChainConfig();
+    const client = getSettlementClient();
     const receipt = await client.getTransactionReceipt({ hash });
     if (!receipt || receipt.status !== "success") {
       return { verified: false, reason: "Transaction not successful" };
     }
 
     const treasury = (input.recipient ?? getCarePayoutAddress()).toLowerCase();
-    const minUnits = BigInt(Math.round(input.minAmountUsd * 10 ** USDT_DECIMALS));
+    const minUnits = BigInt(Math.round(input.minAmountUsd * 10 ** chain.stablecoinDecimals));
     let matched = false;
 
     for (const log of receipt.logs) {
-      if (log.address.toLowerCase() !== USDT_ARBITRUM.toLowerCase()) continue;
+      if (log.address.toLowerCase() !== chain.stablecoinAddress.toLowerCase()) continue;
       try {
         const decoded = decodeEventLog({ abi: [transferEvent], data: log.data, topics: log.topics });
         if (decoded.eventName !== "Transfer") continue;

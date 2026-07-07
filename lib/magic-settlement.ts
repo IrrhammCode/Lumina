@@ -3,7 +3,9 @@
 import { BrowserProvider, Contract, parseUnits } from "ethers";
 import { getMagicProvider, getMagicWalletAddress } from "./magic";
 import { getCarePayoutAddress } from "./particle-config";
+import { getChainConfig } from "./chain-config";
 import { ERC20_ABI, USDT_ARBITRUM } from "./onchain";
+import { getStablecoinSymbol } from "./onchain";
 import { arbiscanTxUrl } from "./settlement-mode";
 import type { SettlementResult } from "./settlement";
 
@@ -14,8 +16,10 @@ export class MagicSettlementError extends Error {
   }
 }
 
-/** Send USDT on Arbitrum from the Magic embedded wallet to the care treasury. */
+/** Send stablecoin from the Magic embedded wallet to the care treasury. */
 export async function settleWithMagicWallet(amount: number): Promise<SettlementResult> {
+  const chain = getChainConfig();
+  const symbol = getStablecoinSymbol();
   const rpcProvider = getMagicProvider();
   if (!rpcProvider) {
     throw new MagicSettlementError("Magic wallet is not available");
@@ -33,7 +37,7 @@ export async function settleWithMagicWallet(amount: number): Promise<SettlementR
   const ethBalance = await provider.getBalance(address ?? treasury);
   if (ethBalance === BigInt(0)) {
     throw new MagicSettlementError(
-      "Add a small amount of ETH on Arbitrum for gas — your Magic wallet needs it to send USDT"
+      `Add a small amount of ${chain.gasLabel} for gas — your Magic wallet needs it to send ${symbol}`
     );
   }
 
@@ -43,7 +47,7 @@ export async function settleWithMagicWallet(amount: number): Promise<SettlementR
   const balance: bigint = await usdt.balanceOf(address);
   if (balance < units) {
     throw new MagicSettlementError(
-      `Insufficient USDT — need $${amount.toFixed(2)} on Arbitrum in your Magic wallet`
+      `Insufficient ${symbol} — need $${amount.toFixed(2)} on ${chain.chainName} in your Magic wallet`
     );
   }
 

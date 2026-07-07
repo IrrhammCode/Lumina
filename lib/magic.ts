@@ -2,6 +2,7 @@
 
 import { Magic } from "magic-sdk";
 import { OAuthExtension } from "@magic-ext/oauth2";
+import { getChainConfig } from "./chain-config";
 
 export type MagicOAuthProvider = "google" | "apple";
 
@@ -9,19 +10,15 @@ type MagicInstance = Magic<[OAuthExtension]>;
 
 let magicInstance: MagicInstance | null = null;
 
-const ARBITRUM_MAINNET = {
-  rpcUrl: process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL ?? "https://arb1.arbitrum.io/rpc",
-  chainId: 42161,
-};
-
 export function getMagic(): MagicInstance | null {
   if (typeof window === "undefined") return null;
 
   if (!magicInstance) {
     const key = process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY;
     if (!key) return null;
+    const chain = getChainConfig();
     magicInstance = new Magic(key, {
-      network: ARBITRUM_MAINNET,
+      network: { rpcUrl: chain.rpcUrl, chainId: chain.chainId },
       extensions: [new OAuthExtension()],
     });
   }
