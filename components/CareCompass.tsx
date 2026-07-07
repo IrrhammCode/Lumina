@@ -216,7 +216,7 @@ export default function CareCompass({ isMagicMode }: CareCompassProps) {
                     </ul>
                   )}
                   <p className="care-compass-powered">
-                    {poweredBy === "tavily" ? compass.poweredTavily : compass.poweredCurated}
+                    {poweredBy === "tavily" ? compass.poweredLive : compass.poweredCurated}
                   </p>
                 </div>
               )}

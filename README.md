@@ -17,7 +17,7 @@ Most hackathon wallets stop at login. Lumina treats Magic as the **invisible sig
 | Judge criteria | Lumina implementation |
 |---|---|
 | Smooth onboarding & auth | Apple-first on iPhone, OAuth redirect, DID token verify server-side |
-| Creative Magic use | **Tavily AI → one-tap send** — research care costs, Face ID, Magic `personal_sign` |
+| Creative Magic use | **AI → one-tap send** — Care Compass suggests amounts, Face ID, Magic `personal_sign` |
 | Consumer-ready UX | **Magic Care Card** (fintech debit-card UI), Care ID not wallet jargon |
 | UX polish | Magic Moment celebration, biometric sheet with Magic badge, first-send nudge |
 | Technical quality | `@magic-sdk/admin` session validation, Arbitrum network config, settlement signing |
@@ -27,13 +27,13 @@ Most hackathon wallets stop at login. Lumina treats Magic as the **invisible sig
 1. **Welcome** → *"Magic embedded wallet · invisible to you"*
 2. **Create account** → Continue with Apple or Google
 3. **Magic Moment** → bottom sheet: *"Your care wallet is ready"* + Care ID
-4. **Onboarding** → wallet reveal step (no connect button) + **Tavily live insight** for family's country
+4. **Onboarding** → wallet reveal step (no connect button) + **live care insight** for family's country
 5. **Care Pledge** (optional) → `personal_sign` commitment with embedded wallet
 6. **Dashboard** → Magic Care Card + **Care Compass**
-7. **Care Compass** → ask *"Pulsa budget for mom?"* → Tavily researches → tap **Send $20 now**
+7. **Care Compass** → ask *"Pulsa budget for mom?"* → AI suggests amount → tap **Send $20 now**
 8. **Face ID** → Magic wallet signs invisibly → family sees proof in ~10s
 
-**One-liner for judges:** *Tavily AI knows what to send; Magic wallet signs without the user ever knowing crypto exists.*
+**One-liner for judges:** *Magic wallet signs every care payment invisibly — login with Apple, approve with Face ID, done.*
 
 ### Architecture
 
@@ -52,12 +52,14 @@ User (Google/Apple/Email)
         ▼
   Lumina session (JWT cookie)  User + wallet address stored
         │
-        ├── Care Compass ──► Tavily API (live care cost research)
+        ├── Care Compass ──► AI care advisor (live cost research)
         │
         └── Approve / Pay ──► Magic personal_sign (demo settlement)
 ```
 
 Particle Universal Accounts remain available as fallback when only Particle keys are configured.
+
+> **Note:** Care Compass uses live web research when `TAVILY_API_KEY` is set (optional). Judges see "AI care advisor" — the wallet layer is always Magic.
 
 ### Key files
 
@@ -69,7 +71,7 @@ Particle Universal Accounts remain available as fallback when only Particle keys
 | `lib/magic.ts` | Magic SDK + OAuth2 extension |
 | `lib/magic-settlement.ts` | `personal_sign` for care payments |
 | `components/MagicCareCard.tsx` | Consumer fintech wallet card |
-| `components/CareCompass.tsx` | Tavily AI + one-tap Magic Express Pay |
+| `components/CareCompass.tsx` | AI care advisor + one-tap Magic Express Pay |
 | `components/MagicMoment.tsx` | First-login wallet reveal celebration |
 | `app/onboarding/OnboardingMagicWalletStep.tsx` | Invisible wallet onboarding step |
 | `lib/magic-pledge.ts` | Optional care commitment signature |
@@ -82,7 +84,7 @@ NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY=pk_live_...
 MAGIC_SECRET_KEY=sk_live_...
 NEXT_PUBLIC_APP_URL=https://your-domain.com   # OAuth redirect base
 
-# Tavily AI — Care Compass live research
+# Care Compass live research (optional — falls back to curated tips)
 TAVILY_API_KEY=tvly-...
 
 # Session
@@ -102,7 +104,7 @@ JWT_SECRET=your-secret
 
 ```bash
 npm install
-cp env.example .env.local   # add Magic + Tavily keys
+cp env.example .env.local   # add Magic keys (Tavily optional)
 npm run dev
 ```
 
@@ -126,7 +128,6 @@ npm run preview:mobile
 
 - **Next.js 16** — App Router
 - **Magic Embedded Wallets** — primary auth + invisible signing
-- **Tavily AI** — Care Compass live research
 - **Arbitrum** — settlement layer
 - **IPFS (Pinata)** — wallet-owned care graph
 - **Particle UA** — optional cross-chain fallback
@@ -134,5 +135,4 @@ npm run preview:mobile
 ## Links
 
 - [Magic Embedded Wallets docs](https://docs.magic.link/embedded-wallets/introduction)
-- [Tavily API](https://tavily.com)
 - Repo: [github.com/IrrhammCode/Lumina](https://github.com/IrrhammCode/Lumina)

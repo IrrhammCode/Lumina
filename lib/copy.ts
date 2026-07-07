@@ -426,21 +426,21 @@ export const family = {
 export const compass = {
   eyebrow: "AI care advisor",
   title: "Care Compass",
-  sub: "Tavily researches costs → one tap → Magic wallet signs. No MetaMask.",
+  sub: "Ask what to send — one tap and your Magic wallet signs. No MetaMask.",
   placeholder: "How much pulsa does mom need?",
   prompts: [
     "Pulsa budget for mom?",
     "School fees this term?",
     "Medicine emergency fund?",
   ],
-  searching: "Tavily researching care costs…",
+  searching: "Finding care cost guidance…",
   sendLabel: "Send now",
   expressLabel: "One-tap with Magic wallet",
   expressCta: (amt: number) => `Send $${amt} now`,
   expressSuccess: "Sent — Magic wallet signed invisibly.",
   expressFailed: "Could not complete send",
-  poweredTavily: "Live research · Tavily AI",
-  poweredCurated: "Curated care tips",
+  poweredLive: "Live AI insight",
+  poweredCurated: "Care tips",
 };
 
 export const magicCard = {
@@ -515,7 +515,7 @@ export const onboarding = {
   ctaWallet: "Continue",
   familySub: "Your family",
   familyPick: "Choose everyone you'll support",
-  familyInsightTitle: (country: string) => `Tavily insight · ${country}`,
+  familyInsightTitle: (country: string) => `Care insight · ${country}`,
   familyInsightLoading: "Researching typical care costs…",
   familyInsightFoot: "Magic wallet ready — set autopilot after onboarding.",
   addTitle: "Someone else?",
@@ -576,7 +576,7 @@ export const welcome = {
   ],
   featuresMagic: [
     "Google or Apple — wallet created invisibly",
-    "Tavily AI suggests what to send",
+    "AI suggests what to send",
     "One tap — Magic signs, no MetaMask",
   ],
   cta: "Create account",
