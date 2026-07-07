@@ -39,6 +39,7 @@ const SEPOLIA_TESTNET: LuminaChainConfig = {
 };
 
 export function getChainMode(): LuminaChainMode {
+  // Default mainnet — only Sepolia when explicitly NEXT_PUBLIC_USE_TESTNET=true
   if (process.env.NEXT_PUBLIC_USE_TESTNET === "true") return "testnet";
   return "mainnet";
 }
