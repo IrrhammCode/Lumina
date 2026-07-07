@@ -1532,9 +1532,16 @@ body {
   color: var(--color-mute);
 }
 
+.balance-float-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
 .balance-float-badge {
   display: inline-block;
-  margin-top: 0.35rem;
   padding: 0.2rem 0.55rem;
   font-size: 0.65rem;
   font-weight: 700;
@@ -1543,6 +1550,46 @@ body {
   background: var(--color-glow-pale);
   border: 1px solid var(--color-glow);
   border-radius: var(--radius-pill);
+}
+
+.badge-ipfs--sm {
+  padding: 0.1rem 0.4rem;
+  font-size: 0.5625rem;
+}
+
+.dashboard-ipfs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem 0.2rem 0.4rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--color-ink-deep);
+  background: var(--color-primary-pale);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+}
+
+.dashboard-ipfs-badge-cid {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.dashboard-ipfs-badge-cid:hover {
+  text-decoration: underline;
+}
+
+.dashboard-ipfs-badge-pending {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--color-mute);
+  font-style: italic;
 }
 
 .balance-float-eye {

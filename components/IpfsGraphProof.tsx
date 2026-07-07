@@ -7,7 +7,7 @@ import { getGraphMeta, subscribeGraphMeta, type GraphMeta } from "@/lib/graph-me
 import { ipfsGatewayUrl, truncateCid } from "@/lib/ipfs-proof";
 
 type IpfsGraphProofProps = {
-  variant?: "card" | "compact" | "inline";
+  variant?: "card" | "compact" | "inline" | "badge";
 };
 
 function storageLabel(storage: string): string {
@@ -41,6 +41,29 @@ export default function IpfsGraphProof({ variant = "card" }: IpfsGraphProofProps
       /* ignore */
     }
   };
+
+  if (variant === "badge") {
+    if (!isIpfs) return null;
+    return (
+      <div className="dashboard-ipfs-badge" title={graph.dashboardBadge}>
+        <Globe size={12} aria-hidden />
+        <span className="badge-ipfs badge-ipfs--sm">{graph.storageIpfs}</span>
+        {hasCid ? (
+          <a
+            href={ipfsGatewayUrl(meta.graphCid!)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="dashboard-ipfs-badge-cid"
+          >
+            {truncateCid(meta.graphCid!, 8, 6)}
+            <ExternalLink size={10} aria-hidden />
+          </a>
+        ) : (
+          <span className="dashboard-ipfs-badge-pending">{graph.pending}</span>
+        )}
+      </div>
+    );
+  }
 
   if (variant === "inline") {
     if (!hasCid) return null;

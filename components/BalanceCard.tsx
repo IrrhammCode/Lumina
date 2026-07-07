@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { home } from "@/lib/copy";
 
@@ -10,6 +11,7 @@ type BalanceCardProps = {
   stats: { value: string; label: string }[];
   balanceLabel?: string;
   accountBadge?: string;
+  extraBadge?: ReactNode;
   highlightAwaiting?: boolean;
 };
 
@@ -20,6 +22,7 @@ export default function BalanceCard({
   stats,
   balanceLabel = home.balanceLabel,
   accountBadge,
+  extraBadge,
   highlightAwaiting = false,
 }: BalanceCardProps) {
   return (
@@ -39,8 +42,13 @@ export default function BalanceCard({
         {visible ? balance : "••••••"}
         {visible && !balance.includes(".") && <span className="balance-float-cents">.00</span>}
       </p>
-      {accountBadge && visible && (
-        <span className="balance-float-badge">{accountBadge}</span>
+      {((accountBadge && visible) || extraBadge) && (
+        <div className="balance-float-badges">
+          {accountBadge && visible && (
+            <span className="balance-float-badge">{accountBadge}</span>
+          )}
+          {extraBadge}
+        </div>
       )}
       <div className="balance-float-stats">
         {stats.map((s, i) => (

@@ -21,6 +21,7 @@ import BiometricPrompt from "@/components/BiometricPrompt";
 import PageLoading from "@/components/PageLoading";
 import PageEnter from "@/components/PageEnter";
 import FamilyPortalCard from "@/components/FamilyPortalCard";
+import IpfsGraphProof from "@/components/IpfsGraphProof";
 import { StaggerList, StaggerItem } from "@/components/StaggerList";
 
 import { getStoredUser, isOnboarded } from "@/lib/auth";
@@ -220,6 +221,7 @@ export default function DashboardPage() {
       balance={formatUnifiedBalance(balanceUsd, stats.total)}
       balanceLabel={isUaMode ? home.balanceUaLabel : home.balanceLabel}
       accountBadge={isUaMode ? (accountInfo?.useEIP7702 ? "EIP-7702 · Universal" : "Universal Account") : undefined}
+      extraBadge={<IpfsGraphProof variant="badge" />}
       visible={balanceVisible}
       onToggle={() => setBalanceVisible(!balanceVisible)}
       stats={[

@@ -508,6 +508,7 @@ export const graph = {
   pending: "Syncing to IPFS…",
   copyCid: "Copy CID",
   copied: "Copied!",
+  dashboardBadge: "Wallet-owned",
 };
 
 export const receipt = {
