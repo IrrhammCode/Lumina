@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
 import { NEED_META, type PaymentRecord } from "@/lib/allowances";
@@ -7,6 +8,8 @@ import { sheetBackdrop, sheetPanel, staggerContainer, staggerItem, tweenBase } f
 import { receipt } from "@/lib/copy";
 import { getCountryMeta } from "@/lib/countries";
 import SettlementProof from "@/components/SettlementProof";
+import IpfsGraphProof from "@/components/IpfsGraphProof";
+import { getGraphMeta, subscribeGraphMeta } from "@/lib/graph-meta";
 
 type ReceiptSheetProps = {
   payment: PaymentRecord | null;
@@ -14,6 +17,14 @@ type ReceiptSheetProps = {
 };
 
 export default function ReceiptSheet({ payment, onClose }: ReceiptSheetProps) {
+  const [hasGraphProof, setHasGraphProof] = useState(false);
+
+  useEffect(() => {
+    const refresh = () => setHasGraphProof(Boolean(getGraphMeta()));
+    refresh();
+    return subscribeGraphMeta(refresh);
+  }, []);
+
   const meta = payment ? NEED_META[payment.needType] : null;
   const dateStr = payment
     ? new Date(payment.date).toLocaleString("en-US", {
@@ -54,6 +65,13 @@ export default function ReceiptSheet({ payment, onClose }: ReceiptSheetProps) {
               {payment.settlementRef && (
                 <motion.div variants={staggerItem}>
                   <SettlementProof payment={payment} />
+                </motion.div>
+              )}
+
+              {hasGraphProof && (
+                <motion.div variants={staggerItem} className="proof-loop proof-loop--ipfs">
+                  <p className="text-xs font-bold uppercase tracking-wider text-mute mb-2">{receipt.graphProof}</p>
+                  <IpfsGraphProof variant="compact" />
                 </motion.div>
               )}
 

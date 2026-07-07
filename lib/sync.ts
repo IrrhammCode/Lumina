@@ -2,6 +2,7 @@ import { api } from "./api-client";
 import { getPayments } from "./allowances";
 import type { LuminaUser } from "./auth";
 import { cacheUser, setOnboardedFromServer } from "./auth";
+import { clearGraphMeta, saveGraphMeta } from "./graph-meta";
 import { emitNewRequest } from "./events";
 import { notifyAutopilotQueue, notifyNewRequest } from "./notifications";
 import { getPendingRequests, getRequests, type CareRequest } from "./requests";
@@ -61,6 +62,12 @@ export async function hydrateFromServer(): Promise<boolean> {
   const result = await api.getUserData();
   if (!result.ok) return false;
   applyUserDataToCache(result.data);
+  if (result.data.storage) {
+    saveGraphMeta({
+      storage: result.data.storage,
+      graphCid: result.data.graphCid,
+    });
+  }
   detectAutopilotQueueChange();
   return true;
 }
@@ -120,5 +127,6 @@ export async function logoutFromServer(): Promise<void> {
   await api.logout();
   if (typeof window !== "undefined") {
     localStorage.removeItem(SERVER_BACKED_KEY);
+    clearGraphMeta();
   }
 }

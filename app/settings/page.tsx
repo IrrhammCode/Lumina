@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { springSnappy } from "@/lib/motion";
 import { getStoredUser, clearStoredUser } from "@/lib/auth";
-import { logoutFromServer } from "@/lib/sync";
+import { hydrateFromServer, logoutFromServer } from "@/lib/sync";
 import { getFamily } from "@/lib/family";
 import { getRules } from "@/lib/allowances";
 import { notificationsLabel, securityLabel } from "@/lib/prefs";
@@ -18,6 +18,7 @@ import { profile, actions } from "@/lib/copy";
 import PageLoading from "@/components/PageLoading";
 import PageEnter from "@/components/PageEnter";
 import FamilyPortalCard from "@/components/FamilyPortalCard";
+import IpfsGraphProof from "@/components/IpfsGraphProof";
 import UADevPanel from "@/components/UADevPanel";
 import { hasParticleConfig } from "@/lib/particle-config";
 
@@ -47,6 +48,7 @@ export default function SettingsPage() {
     setNotifyLabel(notificationsLabel());
     setSecurityVal(securityLabel());
     setReady(true);
+    void hydrateFromServer();
   }, [router]);
 
   useEffect(() => {
@@ -97,6 +99,9 @@ export default function SettingsPage() {
           </div>
           <div className="settings-portal-slot">
             <FamilyPortalCard variant="compact" />
+          </div>
+          <div className="settings-portal-slot">
+            <IpfsGraphProof variant="card" />
           </div>
         </div>
 
