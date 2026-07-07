@@ -494,6 +494,22 @@ export const welcome = {
   signIn: "I already have an account",
 };
 
+export const graph = {
+  title: "Care graph",
+  eyebrow: "Wallet-owned",
+  storageIpfs: "IPFS",
+  storageJson: "Local dev",
+  storagePostgres: "Hosted",
+  cidLabel: "Content ID",
+  viewIpfs: "View on IPFS",
+  sub: "Family, inbox, and schedules — pinned to your wallet, not our database.",
+  compactSub: "Backed by your wallet-owned graph on IPFS.",
+  localSub: "Using local dev storage — set PINATA_JWT for IPFS in production.",
+  pending: "Syncing to IPFS…",
+  copyCid: "Copy CID",
+  copied: "Copied!",
+};
+
 export const receipt = {
   title: "Receipt",
   sent: "Sent",
@@ -504,6 +520,7 @@ export const receipt = {
   completed: "Completed",
   fee: "Fee",
   free: "No fee",
+  graphProof: "Care graph",
   proof: "Settlement",
   proofSub: "Confirmed on-chain. Family sees it in ~10s.",
   proofUa: "Cross-chain settlement via Universal Account.",

@@ -90,6 +90,8 @@ export const api = {
       requests: CareRequest[];
       rules: AllowanceRule[];
       payments: PaymentRecord[];
+      storage?: "ipfs" | "json" | "postgres";
+      graphCid?: string;
     }>("/api/user/data");
   },
 
