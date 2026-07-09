@@ -16,9 +16,13 @@ export function getMagic(): MagicInstance | null {
   if (!magicInstance) {
     const key = process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY;
     if (!key) return null;
+    // https://docs.magic.link/embedded-wallets/blockchains/evm/arbitrum
     const chain = getChainConfig();
     magicInstance = new Magic(key, {
-      network: { rpcUrl: chain.rpcUrl, chainId: chain.chainId },
+      network: {
+        rpcUrl: chain.rpcUrl,
+        chainId: chain.chainId,
+      },
       extensions: [new OAuthExtension()],
     });
   }
@@ -113,4 +117,19 @@ export function getMagicProvider() {
   const magic = getMagic();
   if (!magic) return null;
   return magic.rpcProvider;
+}
+
+/**
+ * Magic quickstart step 3 — connect embedded wallet before sending tx.
+ * @see https://docs.magic.link/embedded-wallets/blockchains/evm/arbitrum
+ */
+export async function connectMagicWallet(): Promise<string | null> {
+  const magic = getMagic();
+  if (!magic) return null;
+  try {
+    const accounts = await magic.wallet.connectWithUI();
+    return accounts[0] ?? (await getMagicWalletAddress());
+  } catch {
+    return getMagicWalletAddress();
+  }
 }

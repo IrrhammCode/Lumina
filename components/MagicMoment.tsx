@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Wallet, X } from "lucide-react";
+import { Wallet, X } from "lucide-react";
 import { consumeMagicMoment, dismissMagicMoment } from "@/lib/magic-moment";
 import { useMagicWallet } from "@/app/providers/MagicWalletProvider";
 import { shortAddress } from "@/lib/format";
@@ -54,7 +54,9 @@ export default function MagicMoment({ ready }: MagicMomentProps) {
             </button>
 
             <div className="magic-moment-glow" aria-hidden>
-              <Sparkles size={28} className="text-glow" />
+              <span className="magic-moment-glow-icon">
+                <Wallet size={32} />
+              </span>
             </div>
 
             <h2 id="magic-moment-title" className="magic-moment-title">

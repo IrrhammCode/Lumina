@@ -23,6 +23,7 @@ import PageEnter from "@/components/PageEnter";
 import FamilyPortalCard from "@/components/FamilyPortalCard";
 import IpfsGraphProof from "@/components/IpfsGraphProof";
 import CareCompass from "@/components/CareCompass";
+
 import MagicMoment from "@/components/MagicMoment";
 import MagicCareCard from "@/components/MagicCareCard";
 import BiometricEnrollBanner from "@/components/BiometricEnrollBanner";

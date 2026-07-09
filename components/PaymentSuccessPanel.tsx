@@ -38,14 +38,9 @@ export default function PaymentSuccessPanel({
       animate="animate"
       className={panel ? "payment-success payment-success--panel" : "payment-success"}
     >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 380, damping: 22 }}
-        className="payment-success-icon"
-      >
-        <Check size={panel ? 28 : 32} strokeWidth={3} />
-      </motion.div>
+      <div className="payment-success-icon" aria-hidden>
+        <Check size={28} strokeWidth={3} />
+      </div>
 
       <h2 className="payment-success-title">{title}</h2>
       <p className="payment-success-body">{body}</p>

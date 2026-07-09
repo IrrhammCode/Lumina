@@ -1,7 +1,7 @@
 "use client";
 
 import { BrowserProvider, Contract, parseUnits } from "ethers";
-import { getMagicProvider, getMagicWalletAddress } from "./magic";
+import { connectMagicWallet, getMagicProvider, getMagicWalletAddress } from "./magic";
 import { getCarePayoutAddress } from "./particle-config";
 import { getChainConfig } from "./chain-config";
 import { ERC20_ABI, USDT_ARBITRUM } from "./onchain";
@@ -16,7 +16,10 @@ export class MagicSettlementError extends Error {
   }
 }
 
-/** Send stablecoin from the Magic embedded wallet to the care treasury. */
+/**
+ * Send stablecoin via Magic embedded wallet → treasury.
+ * Uses magic.rpcProvider (same as Web3(magic.rpcProvider) in Magic docs) + ethers signer.
+ */
 export async function settleWithMagicWallet(amount: number): Promise<SettlementResult> {
   const chain = getChainConfig();
   const symbol = getStablecoinSymbol();
@@ -30,9 +33,13 @@ export async function settleWithMagicWallet(amount: number): Promise<SettlementR
   }
 
   const treasury = getCarePayoutAddress();
+
+  // ⭐️ After user is authenticated — connect wallet UI (Magic quickstart)
+  await connectMagicWallet();
+
   const provider = new BrowserProvider(rpcProvider);
   const signer = await provider.getSigner();
-  const address = await getMagicWalletAddress();
+  const address = (await getMagicWalletAddress()) ?? (await signer.getAddress());
 
   const ethBalance = await provider.getBalance(address ?? treasury);
   if (ethBalance === BigInt(0)) {

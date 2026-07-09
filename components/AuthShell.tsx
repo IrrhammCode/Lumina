@@ -32,8 +32,8 @@ export default function AuthShell({
             className="auth-brand-inner"
           >
             <div className="auth-logo-lockup">
-              <div className="auth-logo-mark">
-                <LuminaLogo size={24} />
+              <div className="auth-logo-mark auth-logo-mark--hero">
+                <LuminaLogo size={40} />
               </div>
               <span className="auth-logo-name">{brand.name}</span>
             </div>

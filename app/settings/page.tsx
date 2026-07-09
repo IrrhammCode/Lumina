@@ -6,6 +6,7 @@ import { Bell, Shield, HelpCircle, LogOut, ChevronRight, Users, Repeat, Code2 } 
 import BottomNav from "@/components/BottomNav";
 import AppShell from "@/components/AppShell";
 import LuminaLogo from "@/components/LuminaLogo";
+
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { springSnappy } from "@/lib/motion";

@@ -9,8 +9,8 @@ export default function EmptyInbox() {
 
   return (
     <div className="empty-inbox-panel">
-      <div className="empty-inbox-icon">
-        <Inbox size={22} className="text-glow" />
+      <div className="empty-state-icon" aria-hidden>
+        <Inbox size={28} />
       </div>
       <p className="empty-inbox-title">{pull.emptyPending}</p>
       <p className="empty-inbox-sub">{pull.emptyInboxSub}</p>
