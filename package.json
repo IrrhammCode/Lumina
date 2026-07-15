@@ -9,9 +9,20 @@
     "start": "next start",
     "start:mobile": "next start --hostname 0.0.0.0",
     "preview:mobile": "npm run build && npm run start:mobile",
+    "ios:assets": "node scripts/generate-ios-assets.mjs && npx capacitor-assets generate --ios",
+    "ios:init": "npm run ios:assets && npx cap add ios",
+    "ios:sync": "npx cap sync ios",
+    "ios:open": "npx cap open ios",
+    "ios:prepare": "npm run ios:assets && npm run ios:sync",
     "lint": "eslint"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@magic-ext/oauth2": "^15.10.0",
     "@magic-sdk/admin": "^2.8.2",
     "@particle-network/connectkit": "^3.0.0-alpha.5",
@@ -32,12 +43,14 @@
     "viem": "^2.54.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

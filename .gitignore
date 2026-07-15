@@ -54,6 +54,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# capacitor / ios build artifacts (commit ios/ source, ignore user-specific Xcode noise)
+ios/App/Pods/
+ios/App/build/
+ios/DerivedData/
+*.xcuserstate
+*.xcuserdata
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

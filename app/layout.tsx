@@ -4,6 +4,7 @@ import { meta } from "@/lib/copy";
 import "./globals.css";
 import ParticleProvider from "./providers/ParticleProvider";
 import MagicWalletProvider from "./providers/MagicWalletProvider";
+import CapacitorShell from "@/components/CapacitorShell";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,8 +27,16 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Lumina" },
   icons: {
-    icon: [{ url: "/icons/lumina-192.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icons/lumina-192.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/icons/lumina-192.svg", type: "image/svg+xml" },
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
   },
 };
 
@@ -37,6 +46,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <body className="font-sans min-h-dvh bg-canvas-soft text-ink antialiased">
+        <CapacitorShell />
         <MagicWalletProvider>
           <ParticleProvider>{children}</ParticleProvider>
         </MagicWalletProvider>
