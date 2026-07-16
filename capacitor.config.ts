@@ -1,4 +1,18 @@
 import type { CapacitorConfig } from "@capacitor/cli";
+import { existsSync, readFileSync } from "fs";
+import { resolve } from "path";
+
+/** Capacitor CLI does not load .env.local — read it for ios:prepare / cap sync. */
+function loadEnvLocal(): void {
+  const path = resolve(process.cwd(), ".env.local");
+  if (!existsSync(path)) return;
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+  }
+}
+
+loadEnvLocal();
 
 const serverUrl = process.env.CAPACITOR_SERVER_URL?.trim();
 
