@@ -6,6 +6,7 @@ import { getMemberById } from "@/lib/family";
 import { tapScaleSoft } from "@/lib/motion";
 import { autopilot } from "@/lib/copy";
 import NeedIcon from "@/components/NeedIcon";
+import MemberAvatar from "@/components/MemberAvatar";
 
 type RuleCardProps = {
   rule: AllowanceRule;
@@ -26,7 +27,15 @@ export default function RuleCard({
   const member = getMemberById(rule.memberId);
   const isPaused = rule.status === "paused";
 
-  const iconCell = (
+  const iconCell = member ? (
+    <MemberAvatar
+      name={member.name}
+      id={member.id}
+      code={member.countryCode}
+      photoUrl={member.photoUrl}
+      size="sm"
+    />
+  ) : (
     <div className="rule-row-icon" style={{ background: meta.pale, color: meta.accent }}>
       <NeedIcon type={rule.needType} size={18} />
     </div>
@@ -46,7 +55,8 @@ export default function RuleCard({
             onClick?.(rule.id);
           }
         }}
-        className={`rule-row ${isPaused ? "paused" : ""}`}
+        className={`rule-row ${isPaused ? "paused" : ""} ${rule.status === "active" ? "rule-row--live" : ""}`}
+        style={{ "--rule-accent": meta.accent } as React.CSSProperties}
       >
         {iconCell}
         <div className="rule-row-body">

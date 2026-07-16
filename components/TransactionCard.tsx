@@ -42,7 +42,7 @@ export default function TransactionCard({
   return (
     <button onClick={onClick} className="list-row w-full">
       {countryCode ? (
-        <MemberAvatar code={countryCode} size="md" />
+        <MemberAvatar name={name} code={countryCode} size="md" />
       ) : (
         <div className="list-avatar text-xs font-bold">{initials}</div>
       )}

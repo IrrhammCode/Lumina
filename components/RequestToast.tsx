@@ -30,7 +30,15 @@ export default function RequestToast({ request, onView, onDismiss }: RequestToas
       <span className="request-toast-icon">
         <Bell size={16} />
       </span>
-      {member && <MemberAvatar code={member.countryCode} size="sm" />}
+      {member && (
+        <MemberAvatar
+          name={member.name}
+          id={member.id}
+          code={member.countryCode}
+          photoUrl={member.photoUrl}
+          size="sm"
+        />
+      )}
       <NeedIcon type={request.needType} size={16} />
       <div className="request-toast-body min-w-0 flex-1">
         <p className="text-sm font-bold text-ink truncate">

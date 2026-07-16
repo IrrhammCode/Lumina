@@ -180,7 +180,7 @@ function NewRuleFlow() {
                     onClick={() => { setMember(m); setStep("what"); }}
                     className="auto-member-card"
                   >
-                    <MemberAvatar code={m.countryCode} size="lg" />
+                    <MemberAvatar name={m.name} id={m.id} code={m.countryCode} photoUrl={m.photoUrl} size="lg" />
                     <p className="auto-member-name">{m.name}</p>
                     <p className="auto-member-meta">{m.relation}</p>
                     <p className="auto-member-payout">{m.method}</p>
@@ -193,7 +193,7 @@ function NewRuleFlow() {
           {step === "what" && member && (
             <motion.div key="what" variants={slideForward} initial="initial" animate="animate" exit="exit" className="space-y-5">
               <div className="auto-member-hero">
-                <MemberAvatar code={member.countryCode} size="md" />
+                <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="md" />
                 <div>
                   <p className="auto-member-hero-name">{member.name}</p>
                   <p className="auto-member-hero-sub">

@@ -20,7 +20,7 @@ import {
   syncPasskeyStatus,
 } from "@/lib/webauthn-client";
 
-const PUBLIC_PATHS = ["/login", "/portal", "/ask"];
+const PUBLIC_PATHS = ["/", "/login", "/portal", "/ask"];
 
 function isPublicPath(path: string): boolean {
   return PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));

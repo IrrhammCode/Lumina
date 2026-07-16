@@ -182,7 +182,7 @@ export default function FamilyPortalCard({ variant = "card", memberId: initialMe
                 onClick={() => setSelectedMemberId(m.id)}
                 className={`portal-member-chip ${selectedMemberId === m.id ? "selected" : ""}`}
               >
-                <MemberAvatar code={m.countryCode} size="sm" />
+                <MemberAvatar name={m.name} id={m.id} code={m.countryCode} photoUrl={m.photoUrl} size="sm" />
                 <span>{m.name.split(" ")[0]}</span>
               </button>
             ))}

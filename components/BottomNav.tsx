@@ -86,7 +86,7 @@ export default function BottomNav() {
                     strokeWidth={isActive ? 2.4 : 1.8}
                   />
                   {item.href === "/dashboard" && pendingCount > 0 && (
-                    <span className="nav-badge" aria-label={`${pendingCount} pending`}>
+                    <span className="nav-badge nav-badge--live" aria-label={`${pendingCount} pending`}>
                       {pendingCount > 9 ? "9+" : pendingCount}
                     </span>
                   )}

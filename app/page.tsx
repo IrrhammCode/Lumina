@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Repeat, Inbox, Bell } from "lucide-react";
 import AuthShell from "@/components/AuthShell";
@@ -11,6 +12,7 @@ import { welcome } from "@/lib/copy";
 import { preloadConnectKit } from "@/lib/connectkit-preload";
 import { hasParticleConfig } from "@/lib/particle-config";
 import { hasMagicConfig } from "@/lib/magic-config";
+import { getMagic } from "@/lib/magic";
 
 const FEATURE_ICONS = [Inbox, Repeat, Bell];
 
@@ -19,6 +21,7 @@ export default function WelcomePage() {
 
   useEffect(() => {
     if (isLoggedIn()) router.replace(getPostLoginPath());
+    if (hasMagicConfig()) getMagic();
     if (hasParticleConfig() && !hasMagicConfig()) preloadConnectKit();
   }, [router]);
 
@@ -26,27 +29,18 @@ export default function WelcomePage() {
   const features = magicMode ? welcome.featuresMagic : welcome.features;
   const trustLabel = magicMode ? welcome.trustMagic : welcome.trust;
 
-  const goLogin = () => {
-    if (!magicMode) preloadConnectKit();
-    router.push("/login");
-  };
-
   return (
     <AuthShell
       variant="welcome"
       footer={
         <>
-          <button type="button" onClick={goLogin} className="btn-primary py-4">
+          <Link href="/login" className="btn-primary py-4 auth-cta-link">
             {welcome.cta}
             <ArrowRight size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={goLogin}
-            className="auth-signin-link"
-          >
+          </Link>
+          <Link href="/login" className="auth-signin-link auth-cta-link">
             {welcome.signIn}
-          </button>
+          </Link>
         </>
       }
     >

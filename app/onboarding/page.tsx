@@ -216,7 +216,7 @@ export default function OnboardingPage() {
                     onClick={() => toggleMember(m.id)}
                     className={`onboard-family-card ${picked ? "selected" : ""}`}
                   >
-                    <MemberAvatar code={m.countryCode} size="lg" />
+                    <MemberAvatar name={m.name} id={m.id} code={m.countryCode} photoUrl={m.photoUrl} size="lg" />
                     <p className="onboard-family-name">{m.name}</p>
                     <p className="onboard-family-meta">{m.relation}</p>
                     <span className={`onboard-family-check ${picked ? "selected" : ""}`}>

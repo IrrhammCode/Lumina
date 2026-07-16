@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, Loader2, Sparkles, ArrowRight, ExternalLink, Zap } from "lucide-react";
+import { Compass, Loader2, Sparkles, ArrowRight, ExternalLink, Zap, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { getFamily } from "@/lib/family";
@@ -105,7 +105,7 @@ export default function CareCompass({ isMagicMode }: CareCompassProps) {
 
   return (
     <>
-      <section className="care-compass">
+      <section className={`care-compass ${expanded ? "care-compass--live" : ""}`}>
         <button
           type="button"
           className="care-compass-header"
@@ -125,6 +125,7 @@ export default function CareCompass({ isMagicMode }: CareCompassProps) {
               Magic
             </span>
           )}
+          <ChevronDown size={18} className="care-compass-chevron" aria-hidden />
         </button>
 
         <AnimatePresence initial={false}>

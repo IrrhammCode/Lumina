@@ -13,6 +13,7 @@ type BalanceCardProps = {
   accountBadge?: string;
   extraBadge?: ReactNode;
   highlightAwaiting?: boolean;
+  tone?: "low" | "funded";
 };
 
 export default function BalanceCard({
@@ -24,9 +25,18 @@ export default function BalanceCard({
   accountBadge,
   extraBadge,
   highlightAwaiting = false,
+  tone = "low",
 }: BalanceCardProps) {
   return (
-    <div className="balance-float">
+    <div
+      className={[
+        "balance-float",
+        tone === "funded" ? "balance-float--funded" : "balance-float--low",
+        highlightAwaiting ? "balance-float--alert" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="balance-float-top">
         <p className="balance-float-label">{balanceLabel}</p>
         <button

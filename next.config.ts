@@ -4,6 +4,8 @@ import path from "path";
 const nextConfig: NextConfig = {
   // Allow iPhone/other devices on the same WiFi (HMR websocket + dev assets)
   allowedDevOrigins: [
+    "*.ngrok-free.dev",
+    "*.ngrok-free.app",
     "192.168.100.*",
     "192.168.1.*",
     "192.168.0.*",

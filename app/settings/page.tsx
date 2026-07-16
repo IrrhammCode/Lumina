@@ -6,6 +6,8 @@ import { Bell, Shield, HelpCircle, LogOut, ChevronRight, Users, Repeat, Code2 } 
 import BottomNav from "@/components/BottomNav";
 import AppShell from "@/components/AppShell";
 import LuminaLogo from "@/components/LuminaLogo";
+import MemberPhotoPicker from "@/components/MemberPhotoPicker";
+import { getUserPhotoUrl, setUserPhotoUrl as persistUserPhoto } from "@/lib/user-profile";
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +17,7 @@ import { hydrateFromServer, logoutFromServer } from "@/lib/sync";
 import { getFamily } from "@/lib/family";
 import { getRules } from "@/lib/allowances";
 import { notificationsLabel, securityLabel } from "@/lib/prefs";
-import { profile, actions } from "@/lib/copy";
+import { profile, actions, family } from "@/lib/copy";
 import PageLoading from "@/components/PageLoading";
 import PageEnter from "@/components/PageEnter";
 import FamilyPortalCard from "@/components/FamilyPortalCard";
@@ -38,6 +40,7 @@ export default function SettingsPage() {
   const [showDev, setShowDev] = useState(false);
   const [notifyLabel, setNotifyLabel] = useState("On");
   const [securityVal, setSecurityVal] = useState("Face ID");
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | undefined>();
 
   useEffect(() => {
     const user = getStoredUser();
@@ -47,6 +50,7 @@ export default function SettingsPage() {
     }
     setUserEmail(user.email || "");
     setUserName(user.email?.split("@")[0] || "User");
+    setUserPhotoUrl(getUserPhotoUrl());
     setFamilyCount(getFamily().length);
     setRuleCount(getRules().length);
     setNotifyLabel(notificationsLabel());
@@ -77,8 +81,24 @@ export default function SettingsPage() {
         hero={
           <div className="hero-inner settings-hero">
             <span className="hero-tagline-pill">{profile.eyebrow}</span>
-            <h1 className="hero-title-compact capitalize">{userName}</h1>
-            <p className="hero-subline">{userEmail}</p>
+            <div className="settings-hero-profile">
+              <MemberPhotoPicker
+                name={userName}
+                id={userEmail}
+                photoUrl={userPhotoUrl}
+                size="hero"
+                className="settings-hero-avatar"
+                onPhotoChange={(url) => {
+                  persistUserPhoto(url);
+                  setUserPhotoUrl(url);
+                }}
+              />
+              <div className="min-w-0">
+                <h1 className="hero-title-compact capitalize">{userName}</h1>
+                <p className="hero-subline">{userEmail}</p>
+                <p className="settings-hero-photo-hint">{family.yourPhotoHint}</p>
+              </div>
+            </div>
           </div>
         }
       >

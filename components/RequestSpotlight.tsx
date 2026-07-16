@@ -16,6 +16,7 @@ type RequestSpotlightProps = {
   onDecline: (id: string) => void;
   onOpen: (id: string) => void;
   onSeeAll: () => void;
+  compact?: boolean;
 };
 
 export default function RequestSpotlight({
@@ -24,6 +25,7 @@ export default function RequestSpotlight({
   onDecline,
   onOpen,
   onSeeAll,
+  compact = false,
 }: RequestSpotlightProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
@@ -55,7 +57,7 @@ export default function RequestSpotlight({
     const member = getMemberById(req.memberId);
 
     return (
-      <article key={req.id} className={`inbox-priority-card ${inCarousel ? "spotlight-card" : ""}`}>
+      <article key={req.id} className={`inbox-priority-card inbox-priority-card--live ${inCarousel ? "spotlight-card" : ""}`}>
         <div className="inbox-priority-head">
           <span className="need-pill need-pill-dynamic need-pill-icon" style={{ "--pill-bg": meta.pale, "--pill-fg": meta.accent } as React.CSSProperties}>
             <NeedIcon type={req.needType} size={14} />
@@ -81,7 +83,7 @@ export default function RequestSpotlight({
 
         {member && (
           <div className="inbox-priority-member">
-            <MemberAvatar code={member.countryCode} size="lg" />
+            <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="lg" />
             <div>
               <p className="spotlight-name">{member.name}</p>
               <p className="spotlight-meta">{member.relation}</p>
@@ -102,8 +104,19 @@ export default function RequestSpotlight({
   };
 
   return (
-    <section className="inbox-priority">
-      {sectionHead}
+    <section className={`inbox-priority ${compact ? "inbox-priority-compact" : ""}`}>
+      {compact ? (
+        <div className="inbox-priority-compact-bar">
+          <p className="inbox-priority-compact-label">
+            {requests.length} {home.awaiting.toLowerCase()}
+          </p>
+          <button type="button" onClick={onSeeAll} className="section-link">
+            {pull.seeAll(requests.length)}
+          </button>
+        </div>
+      ) : (
+        sectionHead
+      )}
       {single ? (
         renderCard(requests[0])
       ) : (

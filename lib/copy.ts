@@ -29,11 +29,19 @@ export const actions = {
 
 export const home = {
   greeting: (name: string) => `Welcome back, ${name}`,
-  heroSubIdle: brand.sub,
+  greetingShort: "Welcome back",
+  heroSubIdle: "Recurring sends for family — on your schedule.",
+  heroSubNoRules: "Set a schedule and care runs automatically.",
   heroSubPending: brand.tagline,
+  heroChipRules: (n: number) => (n === 0 ? "No schedules yet" : `${n} schedule${n === 1 ? "" : "s"}`),
+  heroChipFamily: (n: number) => `${n} in family`,
+  shortcutsTitle: "Shortcuts",
   balanceLabel: "Available to send",
   balanceUaLabel: "Unified balance",
-  balanceMagicLabel: "USDT on Arbitrum",
+  balanceMagicLabel: "USDT balance",
+  statMonth: "This month",
+  statPayments: "Payments",
+  statAwaiting: "Waiting",
   sentMonth: "Sent this month",
   payments: "Payments",
   awaiting: "Needs your OK",
@@ -50,8 +58,10 @@ export const home = {
 
 export const quick = {
   send: "Send now",
+  sendShort: "Send",
   ask: "Ask",
   rule: "New schedule",
+  ruleShort: "Schedule",
   inbox: "Inbox",
 };
 
@@ -66,7 +76,9 @@ export const pull = {
   approveFull: (amount: number) => `Approve & send $${amount}`,
   seeAll: (n: number) => `All requests (${n})`,
   emptyPending: "Nothing waiting. When family asks, it shows up here.",
+  emptyPendingShort: "No requests yet",
   emptyInboxSub: "Share your family portal link so they can request care from home.",
+  emptyInboxSubShort: "Share portal link with family",
   emptyInboxCta: "Share family portal",
   emptyPaid: "No approved requests yet.",
   emptyDeclined: "No passed requests yet.",
@@ -432,6 +444,13 @@ export const family = {
   save: "Add to family",
   saved: "Added to family",
   portalHint: "Share their personal link so they can ask from home.",
+  photoHint: "Tap a photo to upload from your camera roll",
+  photoChange: (name: string) => `Change photo for ${name}`,
+  photoRemove: (name: string) => `Remove photo for ${name}`,
+  photoError: "Could not use that photo. Try another image.",
+  photoSaved: "Photo updated",
+  yourPhoto: "Your photo",
+  yourPhotoHint: "Shown on your dashboard and care card",
 };
 
 export const compass = {

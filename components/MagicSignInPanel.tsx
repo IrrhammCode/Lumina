@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, Mail } from "lucide-react";
 import {
   loginWithMagicEmail,
@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { auth } from "@/lib/copy";
 import { isAppleMobile } from "@/lib/particle-auth";
 import { markMagicMomentPending } from "@/lib/magic-moment";
+import { formatMagicAuthError } from "@/lib/magic-errors";
 
 type MagicSignInPanelProps = {
   disabled?: boolean;
@@ -63,15 +64,19 @@ export default function MagicSignInPanel({ disabled }: MagicSignInPanelProps) {
   const [pending, setPending] = useState<MagicOAuthProvider | "email" | null>(null);
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-  const appleFirst = isAppleMobile();
+  const [appleFirst, setAppleFirst] = useState(false);
+
+  useEffect(() => {
+    setAppleFirst(isAppleMobile());
+  }, []);
 
   const onOAuth = useCallback(async (provider: MagicOAuthProvider) => {
     setError("");
     setPending(provider);
     try {
       await loginWithMagicOAuth(provider);
-    } catch {
-      setError("Could not start sign-in — try again");
+    } catch (err) {
+      setError(formatMagicAuthError(err));
       setPending(null);
     }
   }, []);

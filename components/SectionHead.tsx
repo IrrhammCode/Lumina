@@ -3,15 +3,17 @@ export default function SectionHead({
   title,
   action,
   onAction,
+  compact = false,
 }: {
   eyebrow?: string;
   title: string;
   action?: string;
   onAction?: () => void;
+  compact?: boolean;
 }) {
   return (
-    <div className="section-head">
-      <div>
+    <div className={`section-head ${compact ? "section-head-compact" : ""}`}>
+      <div className="section-head-text">
         {eyebrow && <p className="section-eyebrow">{eyebrow}</p>}
         <h2 className="section-title">{title}</h2>
       </div>

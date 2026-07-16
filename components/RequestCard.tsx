@@ -55,7 +55,7 @@ export default function RequestCard({
               <p className="text-sm font-bold text-ink mt-0.5">{request.title}</p>
               {member && (
                 <div className="flex items-center gap-1.5 mt-1">
-                  <MemberAvatar code={member.countryCode} size="sm" />
+                  <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="sm" />
                   <p className="text-caption text-xs">{member.name}</p>
                 </div>
               )}

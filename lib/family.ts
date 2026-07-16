@@ -10,6 +10,7 @@ export type FamilyMember = {
   country: string;
   method: string;
   currency: string;
+  photoUrl?: string;
 };
 
 export const defaultFamily: FamilyMember[] = [
@@ -20,6 +21,38 @@ export const defaultFamily: FamilyMember[] = [
 ];
 
 const STORAGE_KEY = "lumina_family";
+const PHOTOS_KEY = "lumina_family_photos";
+
+function readPhotoMap(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(PHOTOS_KEY) ?? "{}") as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+function writePhotoMap(map: Record<string, string>): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PHOTOS_KEY, JSON.stringify(map));
+}
+
+function attachPhotos(members: FamilyMember[]): FamilyMember[] {
+  const map = readPhotoMap();
+  return members.map((m) => ({
+    ...m,
+    photoUrl: map[m.id] ?? m.photoUrl,
+  }));
+}
+
+function persistPhotos(members: FamilyMember[]): void {
+  const map = readPhotoMap();
+  for (const m of members) {
+    if (m.photoUrl) map[m.id] = m.photoUrl;
+    else delete map[m.id];
+  }
+  writePhotoMap(map);
+}
 
 function migrateMember(raw: Record<string, unknown>): FamilyMember {
   const country = String(raw.country ?? "Home");
@@ -38,6 +71,7 @@ function migrateMember(raw: Record<string, unknown>): FamilyMember {
     country,
     method: String(raw.method),
     currency: String(raw.currency),
+    photoUrl: raw.photoUrl ? String(raw.photoUrl) : undefined,
   };
 }
 
@@ -47,7 +81,7 @@ export function getFamily(): FamilyMember[] {
   if (!raw) return defaultFamily;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>[];
-    return parsed.map(migrateMember);
+    return attachPhotos(parsed.map(migrateMember));
   } catch {
     return defaultFamily;
   }
@@ -55,11 +89,14 @@ export function getFamily(): FamilyMember[] {
 
 function syncFamily(members: FamilyMember[]): void {
   if (!isLoggedIn()) return;
-  void api.putFamily(members);
+  const lean = members.map(({ photoUrl: _photo, ...rest }) => rest);
+  void api.putFamily(lean);
 }
 
 export function saveFamily(members: FamilyMember[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
+  persistPhotos(members);
+  const lean = members.map(({ photoUrl: _photo, ...rest }) => rest);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(lean));
   syncFamily(members);
 }
 
@@ -75,6 +112,24 @@ export function addMember(input: Omit<FamilyMember, "id">): FamilyMember {
 
 export function removeMember(id: string): void {
   saveFamily(getFamily().filter((m) => m.id !== id));
+}
+
+export function updateMember(
+  id: string,
+  patch: Partial<Omit<FamilyMember, "id">>,
+): FamilyMember | undefined {
+  const members = getFamily();
+  const index = members.findIndex((m) => m.id === id);
+  if (index < 0) return undefined;
+  const updated: FamilyMember = { ...members[index], ...patch };
+  const next = [...members];
+  next[index] = updated;
+  saveFamily(next);
+  return updated;
+}
+
+export function updateMemberPhoto(id: string, photoUrl?: string): FamilyMember | undefined {
+  return updateMember(id, { photoUrl: photoUrl || undefined });
 }
 
 export function setFamily(members: FamilyMember[]): void {

@@ -104,7 +104,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
 
       <div className="inbox-detail-hero">
         <div className="inbox-detail-member">
-          <MemberAvatar code={member.countryCode} size="lg" />
+          <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="lg" />
           <div>
             <p className="inbox-detail-amount">${request.amount.toFixed(2)}</p>
             <p className="inbox-detail-title">{request.title}</p>

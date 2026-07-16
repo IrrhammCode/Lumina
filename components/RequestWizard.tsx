@@ -243,7 +243,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
                       onClick={() => selectMember(m)}
                       className="ask-member-card"
                     >
-                      <MemberAvatar code={m.countryCode} size="lg" />
+                      <MemberAvatar name={m.name} id={m.id} code={m.countryCode} photoUrl={m.photoUrl} size="lg" />
                       <p className="ask-member-name">{m.name}</p>
                       <p className="ask-member-meta">{m.relation}</p>
                       <p className="ask-member-payout">{m.method}</p>
@@ -263,7 +263,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
                       onClick={() => selectMember(m)}
                       className="log-member-card"
                     >
-                      <MemberAvatar code={m.countryCode} size="lg" />
+                      <MemberAvatar name={m.name} id={m.id} code={m.countryCode} photoUrl={m.photoUrl} size="lg" />
                       <p className="log-member-name">{m.name}</p>
                       <p className="log-member-meta">{m.relation}</p>
                       <p className="log-member-payout">{m.method}</p>
@@ -286,7 +286,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
           >
             {isFamily && skippedWho ? (
               <div className="ask-hero">
-                <MemberAvatar code={member.countryCode} size="lg" />
+                <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="lg" />
                 <div>
                   <p className="ask-hero-greeting">{ask.deepLinkGreeting(member.name)}</p>
                   <p className="ask-hero-sub">{member.relation} · {member.country}</p>
@@ -294,7 +294,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
               </div>
             ) : (
               <div className="log-member-hero">
-                <MemberAvatar code={member.countryCode} size="md" />
+                <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="md" />
                 <div>
                   <p className="log-member-hero-name">{member.name}</p>
                   <p className="log-member-hero-sub">
@@ -373,7 +373,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
           >
             {isFamily ? (
               <div className="ask-hero ask-hero--compact">
-                <MemberAvatar code={member.countryCode} size="md" />
+                <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="md" />
                 <div>
                   <p className="ask-hero-greeting">{member.name}</p>
                   <p className="ask-hero-sub">
@@ -383,7 +383,7 @@ export default function RequestWizard({ mode }: RequestWizardProps) {
               </div>
             ) : (
               <div className="log-member-hero">
-                <MemberAvatar code={member.countryCode} size="md" />
+                <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="md" />
                 <div>
                   <p className="log-member-hero-name">{member.name}</p>
                   <p className="log-member-hero-sub">

@@ -95,7 +95,7 @@ export default function RuleDetailPage({ params }: { params: Promise<{ id: strin
 
       <div className="autopilot-detail-hero">
         <div className="autopilot-detail-member">
-          <MemberAvatar code={member.countryCode} size="lg" />
+          <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="lg" />
           <div>
             <p className="autopilot-detail-amount">${ruleFresh.amount.toFixed(2)}</p>
             <p className="autopilot-detail-label">{ruleFresh.label}</p>

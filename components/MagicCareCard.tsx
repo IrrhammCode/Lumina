@@ -6,6 +6,8 @@ import { getStoredUser } from "@/lib/auth";
 import { shortAddress } from "@/lib/format";
 import { useMagicWallet } from "@/app/providers/MagicWalletProvider";
 import { magicCard } from "@/lib/copy";
+import MemberAvatar from "@/components/MemberAvatar";
+import { getUserPhotoUrl } from "@/lib/user-profile";
 
 type MagicCareCardProps = {
   variant?: "full" | "compact";
@@ -27,6 +29,7 @@ export default function MagicCareCard({ variant = "full", userName }: MagicCareC
   if (!isMagicMode || !address) return null;
 
   const displayName = userName || user?.email?.split("@")[0] || "You";
+  const userPhotoUrl = getUserPhotoUrl();
   const careId = shortAddress(address);
   const signedInWith = providerLabel(user?.provider);
 
@@ -42,19 +45,28 @@ export default function MagicCareCard({ variant = "full", userName }: MagicCareC
 
   if (variant === "compact") {
     return (
-      <div className="magic-care-card magic-care-card--compact">
-        <div className="magic-care-card-top">
-          <Sparkles size={14} aria-hidden />
-          <span>{magicCard.compactLabel}</span>
+      <div className="magic-care-card magic-care-card--compact magic-care-card--alive">
+        <div className="magic-care-card-compact-head">
+          <MemberAvatar name={displayName} id={user?.email} photoUrl={userPhotoUrl} size="md" />
+          <div className="magic-care-card-compact-meta">
+            <p className="magic-care-card-compact-name capitalize">{displayName}</p>
+            <p className="magic-care-card-compact-via">{magicCard.signedIn(signedInWith)}</p>
+          </div>
+          <span className="magic-care-card-compact-pill">
+            <Sparkles size={11} aria-hidden />
+            Magic
+          </span>
         </div>
-        <p className="magic-care-card-id">{careId}</p>
-        <p className="magic-care-card-via">{magicCard.signedIn(signedInWith)}</p>
+        <div className="magic-care-card-compact-id">
+          <span className="magic-care-card-compact-id-label">{magicCard.idLabel}</span>
+          <span className="magic-care-card-compact-id-value">{careId}</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="magic-care-card">
+    <div className="magic-care-card magic-care-card--alive">
       <div className="magic-care-card-shine" aria-hidden />
       <div className="magic-care-card-header">
         <span className="magic-care-card-brand">{magicCard.brand}</span>
@@ -63,8 +75,13 @@ export default function MagicCareCard({ variant = "full", userName }: MagicCareC
           {magicCard.invisible}
         </span>
       </div>
-      <p className="magic-care-card-name capitalize">{displayName}</p>
-      <p className="magic-care-card-type">{magicCard.type}</p>
+      <div className="magic-care-card-name-row">
+        <MemberAvatar name={displayName} id={user?.email} photoUrl={userPhotoUrl} size="md" />
+        <div>
+          <p className="magic-care-card-name capitalize">{displayName}</p>
+          <p className="magic-care-card-type">{magicCard.type}</p>
+        </div>
+      </div>
       <div className="magic-care-card-id-row">
         <div>
           <p className="magic-care-card-id-label">{magicCard.idLabel}</p>

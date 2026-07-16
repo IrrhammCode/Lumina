@@ -61,12 +61,51 @@ export async function loginWithMagicEmail(email: string): Promise<string | null>
   }
 }
 
+export function getMagicOAuthRedirectUri(): string {
+  if (typeof window === "undefined") return "/login/oauth";
+  return `${window.location.origin}/login/oauth`;
+}
+
 export async function loginWithMagicOAuth(provider: MagicOAuthProvider): Promise<void> {
   const magic = getMagic();
   if (!magic?.oauth2) throw new Error("Magic OAuth is not configured");
-  const redirectURI =
-    typeof window !== "undefined" ? `${window.location.origin}/login/oauth` : "/login/oauth";
-  await magic.oauth2.loginWithRedirect({ provider, redirectURI });
+
+  const redirectURI = getMagicOAuthRedirectUri();
+
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      fn();
+    };
+
+    const timer = window.setTimeout(() => {
+      finish(() =>
+        reject(
+          new Error(
+            `Sign-in did not start. Add to Magic Dashboard → allowlist: domain "${window.location.host}" and redirect "${redirectURI}"`
+          )
+        )
+      );
+    }, 10_000);
+
+    const flow = magic.oauth2.loginWithRedirect({ provider, redirectURI });
+
+    flow
+      .on("error", (reason: unknown) => {
+        finish(() =>
+          reject(reason instanceof Error ? reason : new Error(String(reason ?? "OAuth failed")))
+        );
+      })
+      .on("closed-by-user", () => {
+        finish(() => reject(new Error("Sign-in was cancelled")));
+      })
+      .on("done", () => {
+        finish(resolve);
+      });
+  });
 }
 
 export async function handleMagicOAuthRedirect(): Promise<{

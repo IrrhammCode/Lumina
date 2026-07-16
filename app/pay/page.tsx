@@ -179,7 +179,7 @@ function PayPageContent() {
                     onClick={() => selectMember(m)}
                     className="pay-member-card"
                   >
-                    <MemberAvatar code={m.countryCode} size="lg" />
+                    <MemberAvatar name={m.name} id={m.id} code={m.countryCode} photoUrl={m.photoUrl} size="lg" />
                     <p className="pay-member-name">{m.name}</p>
                     <p className="pay-member-meta">{m.relation}</p>
                     <p className="pay-member-payout">{m.method}</p>
@@ -199,7 +199,7 @@ function PayPageContent() {
               className="space-y-5"
             >
               <div className="pay-member-hero">
-                <MemberAvatar code={member.countryCode} size="md" />
+                <MemberAvatar name={member.name} id={member.id} code={member.countryCode} photoUrl={member.photoUrl} size="md" />
                 <div>
                   <p className="pay-member-hero-name">{member.name}</p>
                   <p className="pay-member-hero-sub">

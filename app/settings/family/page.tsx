@@ -7,9 +7,15 @@ import { Plus, Trash2 } from "lucide-react";
 import SettingsFlowHeader from "@/components/SettingsFlowHeader";
 import StickyFooter from "@/components/StickyFooter";
 import { getStoredUser } from "@/lib/auth";
-import { getFamily, addMember, removeMember, type FamilyMember } from "@/lib/family";
+import {
+  getFamily,
+  addMember,
+  removeMember,
+  updateMemberPhoto,
+  type FamilyMember,
+} from "@/lib/family";
 import { family, actions, portal } from "@/lib/copy";
-import MemberAvatar from "@/components/MemberAvatar";
+import MemberPhotoPicker from "@/components/MemberPhotoPicker";
 import { countryCodeFromName } from "@/lib/countries";
 import PageLoading from "@/components/PageLoading";
 import MemberShareButton from "@/components/MemberShareButton";
@@ -26,9 +32,17 @@ export default function FamilySettingsPage() {
   const [relation, setRelation] = useState("");
   const [country, setCountry] = useState("Philippines");
   const [method, setMethod] = useState("GCash");
+  const [newPhotoUrl, setNewPhotoUrl] = useState<string | undefined>();
   const [saved, setSaved] = useState(false);
+  const [toastMsg, setToastMsg] = useState(family.saved);
 
   const refresh = () => setMembers(getFamily());
+
+  const flashSaved = (message: string) => {
+    setToastMsg(message);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   useEffect(() => {
     if (!getStoredUser()?.loggedIn) {
@@ -39,6 +53,15 @@ export default function FamilySettingsPage() {
     setReady(true);
   }, [router]);
 
+  const resetAddForm = () => {
+    setName("");
+    setRelation("");
+    setCountry("Philippines");
+    setMethod("GCash");
+    setNewPhotoUrl(undefined);
+    setShowAdd(false);
+  };
+
   const handleAdd = () => {
     if (!name.trim()) return;
     addMember({
@@ -48,19 +71,23 @@ export default function FamilySettingsPage() {
       country,
       method,
       currency: "USD",
+      photoUrl: newPhotoUrl,
     });
-    setName("");
-    setRelation("");
-    setShowAdd(false);
+    resetAddForm();
     refresh();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    flashSaved(family.saved);
   };
 
   const handleRemove = (id: string) => {
     if (members.length <= 1) return;
     removeMember(id);
     refresh();
+  };
+
+  const handlePhotoChange = (memberId: string, photoUrl: string | undefined) => {
+    updateMemberPhoto(memberId, photoUrl);
+    refresh();
+    flashSaved(family.photoSaved);
   };
 
   if (!ready) return <PageLoading />;
@@ -79,6 +106,7 @@ export default function FamilySettingsPage() {
       <FlowPageBody className="space-y-5">
         <div className="settings-panel">
           <p className="settings-panel-eyebrow">{family.listEyebrow}</p>
+          <p className="settings-family-photo-hint">{family.photoHint}</p>
           <div className="settings-family-list">
             <AnimatePresence initial={false}>
               {members.map((m) => (
@@ -90,7 +118,14 @@ export default function FamilySettingsPage() {
                   exit={{ opacity: 0, x: 8, height: 0 }}
                   className="settings-family-row"
                 >
-                  <MemberAvatar code={m.countryCode} size="md" />
+                  <MemberPhotoPicker
+                    name={m.name}
+                    id={m.id}
+                    code={m.countryCode}
+                    photoUrl={m.photoUrl}
+                    size="md"
+                    onPhotoChange={(url) => handlePhotoChange(m.id, url)}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="settings-family-name">{m.name}</p>
                     <p className="settings-family-meta">{m.relation} · {m.method} · {m.country}</p>
@@ -124,6 +159,16 @@ export default function FamilySettingsPage() {
               className="settings-add-panel"
             >
               <p className="field-label">{family.addForm}</p>
+              <div className="settings-add-photo-row">
+                <MemberPhotoPicker
+                  name={name.trim() || "New"}
+                  code={countryCodeFromName(country)}
+                  photoUrl={newPhotoUrl}
+                  size="lg"
+                  onPhotoChange={setNewPhotoUrl}
+                />
+                <p className="settings-add-photo-copy">{family.photoHint}</p>
+              </div>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder={family.namePh} className="input-field" />
               <input value={relation} onChange={(e) => setRelation(e.target.value)} placeholder={family.relationPh} className="input-field" />
               <select value={country} onChange={(e) => setCountry(e.target.value)} className="input-field">
@@ -139,7 +184,7 @@ export default function FamilySettingsPage() {
                 <option>Bank transfer</option>
               </select>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary flex-1">
+                <button type="button" onClick={resetAddForm} className="btn-secondary flex-1">
                   {family.cancel}
                 </button>
                 <button type="button" onClick={handleAdd} disabled={!name.trim()} className="btn-primary flex-1">
@@ -156,7 +201,7 @@ export default function FamilySettingsPage() {
           <FamilyPortalCard variant="compact" />
         </div>
 
-        <SavedToast message={family.saved} visible={saved} />
+        <SavedToast message={toastMsg} visible={saved} />
       </FlowPageBody>
 
       {!showAdd && (
