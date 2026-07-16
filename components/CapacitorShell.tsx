@@ -9,6 +9,7 @@ import { installMagicPkceBridge } from "@/lib/magic-pkce-bridge";
 
 /**
  * Lumina://login/oauth?code=...&state=...
+ * Lumina://login/oauth?ott=...
  * MUST NOT use `new URL(url.replace('lumina:', 'https:'))` — that parses host as "login"
  * and pathname as "/oauth", dropping the correct path.
  */
@@ -24,7 +25,10 @@ function handleNativeAuthUrl(url: string): boolean {
     const pathRaw = qIdx >= 0 ? beforeHash.slice(0, qIdx) : beforeHash;
     const search = qIdx >= 0 ? beforeHash.slice(qIdx) : "";
     const path = pathRaw.startsWith("/") ? pathRaw : `/${pathRaw || "login/oauth"}`;
-    window.location.href = `${window.location.origin}${path}${search}${hash}`;
+    const next = `${window.location.origin}${path}${search}${hash}`;
+    // Avoid reload loops if we're already on the target URL.
+    if (window.location.href.split("#")[0] === next.split("#")[0]) return true;
+    window.location.href = next;
     return true;
   }
 
