@@ -2,7 +2,6 @@
 
 import { Magic } from "magic-sdk";
 import { OAuthExtension, type OAuthRedirectResult } from "@magic-ext/oauth2";
-import { Capacitor } from "@capacitor/core";
 import { getChainConfig } from "./chain-config";
 
 export type MagicOAuthProvider = "google" | "apple";
@@ -69,13 +68,15 @@ export async function loginWithMagicEmail(email: string): Promise<string | null>
   }
 }
 
-/** HTTPS callback for browser; custom scheme for Capacitor so Safari cannot steal the PKCE session. */
+/** Always HTTPS — Magic rejects custom schemes as OAuth redirectURI ("Invalid redirect URL"). */
 export function getMagicOAuthRedirectUri(): string {
   if (typeof window === "undefined") return "/login/oauth";
-  if (Capacitor.isNativePlatform()) {
-    return "Lumina://login/oauth";
-  }
   return `${window.location.origin}/login/oauth`;
+}
+
+/** Deep link used only to hand Safari → app after HTTPS OAuth callback. */
+export function getMagicNativeDeepLink(search = "", hash = ""): string {
+  return `Lumina://login/oauth${search}${hash}`;
 }
 
 function sessionFromOAuthResult(result: OAuthRedirectResult): MagicOAuthSession {

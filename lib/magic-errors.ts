@@ -19,8 +19,12 @@ export function formatMagicAuthError(error: unknown): string {
     return `Domain/redirect not allowlisted. Add "${host}" and "https://${host}/login/oauth" in Magic Dashboard → Allowed Origins & Redirects.`;
   }
 
+  if (/Invalid redirect URL|invalid redirect/i.test(raw)) {
+    return "Magic rejected the redirect URL. Use only https://your-app/login/oauth in Magic Redirects (custom schemes like Lumina:// are not valid as OAuth redirectURI).";
+  }
+
   if (/MISSING_PKCE_METADATA|OAuth session metadata not found/i.test(raw)) {
-    return "Sign-in session was lost (opened outside the app). Add redirect Lumina://login/oauth in Magic Dashboard → Redirects, deploy the latest web build, then try again.";
+    return "Sign-in session was lost after leaving the app. Close Safari, reopen Lumina from TestFlight, and try again. If it persists, tap “Open Lumina app” on the callback page.";
   }
 
   if (/cancelled|closed-by-user|user closed/i.test(raw)) {
