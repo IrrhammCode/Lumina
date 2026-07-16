@@ -74,24 +74,13 @@ export default function MagicSignInPanel({ disabled }: MagicSignInPanelProps) {
     setError("");
     setPending(provider);
     try {
-      const session = await loginWithMagicOAuth(provider);
-      // Native popup path returns a session; web redirect navigates away (session is void).
-      if (session?.didToken) {
-        const ok = await completeMagicSession(session.didToken);
-        if (ok) {
-          markMagicMomentPending();
-          router.replace(getPostLoginPath());
-          return;
-        }
-        setError("Could not finish sign-in");
-        setPending(null);
-      }
-      // else: redirect in progress — keep spinner until page unloads
+      await loginWithMagicOAuth(provider);
+      // Redirect navigates away; keep spinner until unload.
     } catch (err) {
       setError(formatMagicAuthError(err));
       setPending(null);
     }
-  }, [router]);
+  }, []);
 
   const onEmail = async (e: React.FormEvent) => {
     e.preventDefault();

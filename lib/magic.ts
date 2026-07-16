@@ -89,9 +89,12 @@ function sessionFromOAuthResult(result: OAuthRedirectResult): MagicOAuthSession 
 }
 
 /**
- * Starts Magic OAuth.
- * - Web: full-page redirect → /login/oauth
- * - Native: popup first, then custom-scheme redirect (Lumina://) so PKCE stays in the app WebView
+ * Starts Magic OAuth via full-page redirect.
+ * - Web → https://origin/login/oauth
+ * - Native → Lumina://login/oauth (custom scheme) so Safari cannot steal PKCE
+ *
+ * Note: loginWithPopup is intentionally NOT used on Capacitor — WKWebView blocks
+ * popups and the promise hangs with no UI.
  */
 export async function loginWithMagicOAuth(
   provider: MagicOAuthProvider
@@ -100,31 +103,6 @@ export async function loginWithMagicOAuth(
   if (!magic?.oauth2) throw new Error("Magic OAuth is not configured");
 
   const redirectURI = getMagicOAuthRedirectUri();
-
-  if (Capacitor.isNativePlatform()) {
-    try {
-      const popupResult = await new Promise<MagicOAuthSession>((resolve, reject) => {
-        const flow = magic.oauth2.loginWithPopup({ provider });
-        flow
-          .on("done", (result) => {
-            try {
-              resolve(sessionFromOAuthResult(result));
-            } catch (err) {
-              reject(err);
-            }
-          })
-          .on("error", (reason: unknown) => {
-            reject(reason instanceof Error ? reason : new Error(String(reason ?? "OAuth failed")));
-          })
-          .on("closed-by-user", () => {
-            reject(new Error("Sign-in was cancelled"));
-          });
-      });
-      return popupResult;
-    } catch (popupErr) {
-      console.warn("Magic popup OAuth failed, falling back to redirect:", popupErr);
-    }
-  }
 
   await new Promise<void>((resolve, reject) => {
     let settled = false;
