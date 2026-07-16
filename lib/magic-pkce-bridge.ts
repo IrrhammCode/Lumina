@@ -81,6 +81,17 @@ export function installMagicPkceBridge(): () => void {
       if (href) {
         void (async () => {
           await awaitMagicPkcePersisted();
+          // Let Apple leave the WebView (system Safari). Forcing appleid into WKWebView
+          // triggers native SIWA which frequently returns "Sign Up Not Completed"
+          // when Magic is configured with a Services ID (web) client.
+          const isApple =
+            /appleid\.apple\.com/i.test(href) ||
+            /apple\.com\/.*sign.?in/i.test(href) ||
+            /[?&]provider=apple\b/i.test(href);
+          if (isApple) {
+            originalOpen(href, "_blank");
+            return;
+          }
           window.location.assign(href);
         })();
         return null;
@@ -96,6 +107,12 @@ export function installMagicPkceBridge(): () => void {
       const href = typeof url === "string" ? url : url.toString();
       void (async () => {
         await awaitMagicPkcePersisted();
+        const isApple =
+          /appleid\.apple\.com/i.test(href) || /apple\.com\/.*sign.?in/i.test(href);
+        if (isApple) {
+          originalOpen(href, "_blank");
+          return;
+        }
         assign.call(this, href);
       })();
     };
@@ -108,6 +125,12 @@ export function installMagicPkceBridge(): () => void {
       const href = typeof url === "string" ? url : url.toString();
       void (async () => {
         await awaitMagicPkcePersisted();
+        const isApple =
+          /appleid\.apple\.com/i.test(href) || /apple\.com\/.*sign.?in/i.test(href);
+        if (isApple) {
+          originalOpen(href, "_blank");
+          return;
+        }
         replace.call(this, href);
       })();
     };

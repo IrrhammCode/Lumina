@@ -49,6 +49,10 @@ if (serverUrl) {
     cleartext: serverUrl.startsWith("http://"),
     // Keep OAuth inside the WKWebView. If Google/Apple open in Safari,
     // Magic PKCE state is lost and /login/oauth shows "cancelled or failed".
+    // Keep Google OAuth inside the WKWebView.
+    // Do NOT include appleid.apple.com — iOS upgrades that to native SIWA and often
+    // fails with "Sign Up Not Completed" for Magic Services ID (web) credentials.
+    // Apple should open in Safari, then return via /login/oauth + deep link.
     allowNavigation: [
       "*.magic.link",
       "*.auth.magic.link",
@@ -59,8 +63,6 @@ if (serverUrl) {
       "*.googleapis.com",
       "*.gstatic.com",
       "*.googleusercontent.com",
-      "appleid.apple.com",
-      "*.apple.com",
       "arbiscan.io",
       "*.arbiscan.io",
       "bridge.arbitrum.io",
