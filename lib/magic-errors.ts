@@ -19,6 +19,10 @@ export function formatMagicAuthError(error: unknown): string {
     return `Domain/redirect not allowlisted. Add "${host}" and "https://${host}/login/oauth" in Magic Dashboard → Allowed Origins & Redirects.`;
   }
 
+  if (/MISSING_PKCE_METADATA|OAuth session metadata not found/i.test(raw)) {
+    return "Sign-in session was lost (opened outside the app). Add redirect Lumina://login/oauth in Magic Dashboard → Redirects, deploy the latest web build, then try again.";
+  }
+
   if (/cancelled|closed-by-user|user closed/i.test(raw)) {
     return "Sign-in was cancelled. If this keeps happening in the iOS app, rebuild after updating Capacitor allowNavigation so Google/Apple stay in-app.";
   }
