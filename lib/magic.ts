@@ -90,12 +90,9 @@ function sessionFromOAuthResult(result: OAuthRedirectResult): MagicOAuthSession 
 }
 
 /**
- * Starts Magic OAuth via full-page redirect.
- * - Web → https://origin/login/oauth
- * - Native → Lumina://login/oauth (custom scheme) so Safari cannot steal PKCE
- *
- * Note: loginWithPopup is intentionally NOT used on Capacitor — WKWebView blocks
- * popups and the promise hangs with no UI.
+ * Starts Magic OAuth via full-page redirect to HTTPS `/login/oauth`.
+ * On Capacitor, navigation is forced into the same WebView and delayed until
+ * PKCE metadata is persisted server-side (prevents MISSING_PKCE_METADATA).
  */
 export async function loginWithMagicOAuth(
   provider: MagicOAuthProvider
@@ -105,10 +102,13 @@ export async function loginWithMagicOAuth(
 
   const redirectURI = getMagicOAuthRedirectUri();
 
-  // Ensure PKCE mirror is active before Magic writes the verifier (native Safari handoff).
   if (typeof window !== "undefined") {
-    const { installMagicPkceBridge } = await import("./magic-pkce-bridge");
+    const { installMagicPkceBridge, awaitMagicPkcePersisted } = await import(
+      "./magic-pkce-bridge"
+    );
     installMagicPkceBridge();
+    // Touch so bundlers keep the helper; await happens inside navigation patches.
+    void awaitMagicPkcePersisted;
   }
 
   await new Promise<void>((resolve, reject) => {
@@ -128,7 +128,7 @@ export async function loginWithMagicOAuth(
           )
         )
       );
-    }, 10_000);
+    }, 12_000);
 
     const flow = magic.oauth2.loginWithRedirect({ provider, redirectURI });
 

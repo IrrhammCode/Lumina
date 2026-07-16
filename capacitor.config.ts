@@ -56,6 +56,8 @@ if (serverUrl) {
       "auth.magic.link",
       "accounts.google.com",
       "*.google.com",
+      "*.googleapis.com",
+      "*.gstatic.com",
       "*.googleusercontent.com",
       "appleid.apple.com",
       "*.apple.com",

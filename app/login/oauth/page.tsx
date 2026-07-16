@@ -23,8 +23,7 @@ function isIosBrowser(): boolean {
   return /iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-/** Capacitor bridge can lag a few frames after WebView navigation. */
-async function waitForNativeApp(ms = 500): Promise<boolean> {
+async function waitForNativeApp(ms = 600): Promise<boolean> {
   const deadline = Date.now() + ms;
   while (Date.now() < deadline) {
     try {
@@ -48,14 +47,12 @@ async function completeWithDidToken(didToken: string): Promise<void> {
   markMagicMomentPending();
 }
 
-async function redeemOtt(ott: string): Promise<string | null> {
-  try {
-    const res = await fetch(`/api/auth/oauth/pkce?ott=${encodeURIComponent(ott)}`);
-    const json = (await res.json()) as { ok?: boolean; data?: { didToken?: string } };
-    return json?.data?.didToken ?? null;
-  } catch {
-    return null;
+async function restorePkceWithRetry(state: string | null): Promise<boolean> {
+  for (let i = 0; i < 4; i++) {
+    if (await restoreMagicPkceFromServer(state)) return true;
+    await new Promise((r) => setTimeout(r, 350 * (i + 1)));
   }
+  return false;
 }
 
 export default function MagicOAuthCallbackPage() {
@@ -73,24 +70,13 @@ export default function MagicOAuthCallbackPage() {
       const hash = window.location.hash;
       const params = new URLSearchParams(search);
       const state = params.get("state");
-      const ott = params.get("ott");
       const didParam = params.get("did");
       const inNative = await waitForNativeApp();
 
       try {
-        // App opened via deep link after Safari already finished Magic OAuth.
         if (didParam) {
           setStatus("Opening your care wallet…");
           await completeWithDidToken(didParam);
-          if (!cancelled) router.replace(getPostLoginPath());
-          return;
-        }
-
-        if (ott) {
-          setStatus("Opening your care wallet…");
-          const didToken = await redeemOtt(ott);
-          if (!didToken) throw new Error("Sign-in ticket expired. Please try again.");
-          await completeWithDidToken(didToken);
           if (!cancelled) router.replace(getPostLoginPath());
           return;
         }
@@ -101,9 +87,8 @@ export default function MagicOAuthCallbackPage() {
           throw new Error("Missing sign-in details. Go back and try Google/Apple again.");
         }
 
-        // Always finish OAuth in the current WebView/Safari first (PKCE restored from server).
         setStatus("Restoring secure sign-in…");
-        await restoreMagicPkceFromServer(state);
+        await restorePkceWithRetry(state);
 
         setStatus(auth.magicSigningIn);
         const result = await Promise.race([
@@ -126,19 +111,18 @@ export default function MagicOAuthCallbackPage() {
         await completeWithDidToken(result.didToken);
         await clearMagicPkceServer(state);
 
-        // Safari cannot share cookies with the app WebView — pass DID via deep link.
+        // Only Safari needs a deep-link handoff (cookies aren't shared with the app WebView).
         if (!inNative && isIosBrowser()) {
-          setStatus("Opening Lumina…");
           const deep = `Lumina://login/oauth?did=${encodeURIComponent(result.didToken)}`;
           setHandoffHref(deep);
           setHandoff(true);
+          setStatus("Opening Lumina…");
           window.location.href = deep;
           return;
         }
 
         if (!cancelled) router.replace(getPostLoginPath());
       } catch (err) {
-        // One automatic bounce into the app if Safari couldn't finish (PKCE missing, etc.).
         if (!inNative && isIosBrowser() && (search || hash)) {
           const already = sessionStorage.getItem(HANDOFF_FLAG);
           if (!already) {
