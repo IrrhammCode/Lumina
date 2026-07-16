@@ -5,44 +5,44 @@ import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { StatusBar, Style } from "@capacitor/status-bar";
+import { installMagicPkceBridge } from "@/lib/magic-pkce-bridge";
 
-/** Map Lumina://login/oauth?... → https://origin/login/oauth?... inside the same WebView (keeps PKCE). */
+/**
+ * Lumina://login/oauth?code=...&state=...
+ * MUST NOT use `new URL(url.replace('lumina:', 'https:'))` — that parses host as "login"
+ * and pathname as "/oauth", dropping the correct path.
+ */
 function handleNativeAuthUrl(url: string): boolean {
   if (!url || typeof window === "undefined") return false;
 
-  const isCustomScheme = /^lumina:/i.test(url);
-  const isHttpsOAuth =
-    url.startsWith(window.location.origin) && url.includes("/login/oauth");
+  if (/^lumina:/i.test(url)) {
+    const rest = url.replace(/^lumina:\/\//i, "");
+    const hashIdx = rest.indexOf("#");
+    const hash = hashIdx >= 0 ? rest.slice(hashIdx) : "";
+    const beforeHash = hashIdx >= 0 ? rest.slice(0, hashIdx) : rest;
+    const qIdx = beforeHash.indexOf("?");
+    const pathRaw = qIdx >= 0 ? beforeHash.slice(0, qIdx) : beforeHash;
+    const search = qIdx >= 0 ? beforeHash.slice(qIdx) : "";
+    const path = pathRaw.startsWith("/") ? pathRaw : `/${pathRaw || "login/oauth"}`;
+    window.location.href = `${window.location.origin}${path}${search}${hash}`;
+    return true;
+  }
 
-  if (!isCustomScheme && !isHttpsOAuth) {
-    try {
-      const target = new URL(url);
-      if (target.pathname && target.pathname !== "/") {
-        window.location.href = `${window.location.origin}${target.pathname}${target.search}${target.hash}`;
-        return true;
-      }
-    } catch {
-      return false;
-    }
-    return false;
+  if (url.startsWith(window.location.origin) && url.includes("/login/oauth")) {
+    window.location.href = url;
+    return true;
   }
 
   try {
-    // Lumina://login/oauth?code=... → parse as https for URL API
-    const normalized = isCustomScheme
-      ? url.replace(/^lumina:/i, "https:")
-      : url;
-    const parsed = new URL(normalized);
-    const path = parsed.pathname.includes("login/oauth")
-      ? parsed.pathname
-      : "/login/oauth";
-    window.location.href = `${window.location.origin}${path}${parsed.search}${parsed.hash}`;
-    return true;
+    const target = new URL(url);
+    if (target.pathname && target.pathname !== "/") {
+      window.location.href = `${window.location.origin}${target.pathname}${target.search}${target.hash}`;
+      return true;
+    }
   } catch {
-    const qs = url.includes("?") ? url.slice(url.indexOf("?")) : "";
-    window.location.href = `${window.location.origin}/login/oauth${qs}`;
-    return true;
+    return false;
   }
+  return false;
 }
 
 export default function CapacitorShell() {
@@ -51,6 +51,8 @@ export default function CapacitorShell() {
 
     document.documentElement.classList.add("is-native-app");
     document.body.classList.add("is-native-app");
+
+    const uninstallPkceBridge = installMagicPkceBridge();
 
     const lockOverscroll = (event: TouchEvent) => {
       if (event.touches.length > 1) event.preventDefault();
@@ -87,6 +89,7 @@ export default function CapacitorShell() {
     });
 
     return () => {
+      uninstallPkceBridge();
       document.documentElement.classList.remove("is-native-app");
       document.body.classList.remove("is-native-app");
       document.removeEventListener("touchmove", lockOverscroll);

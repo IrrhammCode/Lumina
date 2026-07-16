@@ -105,6 +105,12 @@ export async function loginWithMagicOAuth(
 
   const redirectURI = getMagicOAuthRedirectUri();
 
+  // Ensure PKCE mirror is active before Magic writes the verifier (native Safari handoff).
+  if (typeof window !== "undefined") {
+    const { installMagicPkceBridge } = await import("./magic-pkce-bridge");
+    installMagicPkceBridge();
+  }
+
   await new Promise<void>((resolve, reject) => {
     let settled = false;
     const finish = (fn: () => void) => {

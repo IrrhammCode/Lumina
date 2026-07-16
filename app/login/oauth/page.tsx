@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { getMagicNativeDeepLink, handleMagicOAuthRedirect } from "@/lib/magic";
+import {
+  clearMagicPkceNative,
+  restoreMagicPkceFromNative,
+} from "@/lib/magic-pkce-bridge";
 import { api } from "@/lib/api-client";
 import { loginAndHydrate } from "@/lib/sync";
 import { getPostLoginPath } from "@/lib/auth";
@@ -15,8 +19,7 @@ import { formatMagicAuthError } from "@/lib/magic-errors";
 function isMobileSafariHandoff(): boolean {
   if (typeof window === "undefined") return false;
   if (Capacitor.isNativePlatform()) return false;
-  const ua = navigator.userAgent;
-  return /iPhone|iPad|iPod/i.test(ua);
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
 export default function MagicOAuthCallbackPage() {
@@ -29,8 +32,7 @@ export default function MagicOAuthCallbackPage() {
       const search = window.location.search;
       const hash = window.location.hash;
 
-      // OAuth finished in Safari (outside the app). Bounce into Lumina so the
-      // WebView — which still holds Magic PKCE metadata — can finish login.
+      // OAuth finished in Safari — bounce into the app with the same query.
       if (isMobileSafariHandoff() && (search || hash)) {
         const deepLink = getMagicNativeDeepLink(search, hash);
         setHandoff(true);
@@ -39,6 +41,10 @@ export default function MagicOAuthCallbackPage() {
       }
 
       try {
+        if (Capacitor.isNativePlatform()) {
+          await restoreMagicPkceFromNative();
+        }
+
         const result = await handleMagicOAuthRedirect();
         if (!result?.didToken) {
           setError(
@@ -54,6 +60,7 @@ export default function MagicOAuthCallbackPage() {
           return;
         }
 
+        await clearMagicPkceNative();
         await loginAndHydrate(verified.data.user);
         markMagicMomentPending();
         router.replace(getPostLoginPath());
