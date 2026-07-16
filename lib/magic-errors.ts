@@ -24,7 +24,7 @@ export function formatMagicAuthError(error: unknown): string {
   }
 
   if (/MISSING_PKCE_METADATA|OAuth session metadata not found/i.test(raw)) {
-    return "Sign-in session was lost after leaving the app. Update to the latest TestFlight build (needs native Preferences plugin), then try Google/Apple again.";
+    return "Sign-in session was lost after leaving the app. Deploy the latest web build, force-close Lumina, then try Google/Apple again.";
   }
 
   if (/cancelled|closed-by-user|user closed/i.test(raw)) {

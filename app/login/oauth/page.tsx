@@ -6,8 +6,8 @@ import { Loader2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { getMagicNativeDeepLink, handleMagicOAuthRedirect } from "@/lib/magic";
 import {
-  clearMagicPkceNative,
-  restoreMagicPkceFromNative,
+  clearMagicPkceServer,
+  restoreMagicPkceFromServer,
 } from "@/lib/magic-pkce-bridge";
 import { api } from "@/lib/api-client";
 import { loginAndHydrate } from "@/lib/sync";
@@ -31,9 +31,13 @@ export default function MagicOAuthCallbackPage() {
     void (async () => {
       const search = window.location.search;
       const hash = window.location.hash;
+      const state = new URLSearchParams(search).get("state");
 
       // OAuth finished in Safari — bounce into the app with the same query.
       if (isMobileSafariHandoff() && (search || hash)) {
+        // Restore + finish in Safari when possible, then open app with session cookie path...
+        // PKCE is restored from server so getRedirectResult can run in whichever context has the URL.
+        // Prefer completing inside the app after deep link (same query + server PKCE).
         const deepLink = getMagicNativeDeepLink(search, hash);
         setHandoff(true);
         window.location.href = deepLink;
@@ -41,9 +45,7 @@ export default function MagicOAuthCallbackPage() {
       }
 
       try {
-        if (Capacitor.isNativePlatform()) {
-          await restoreMagicPkceFromNative();
-        }
+        await restoreMagicPkceFromServer(state);
 
         const result = await handleMagicOAuthRedirect();
         if (!result?.didToken) {
@@ -60,7 +62,7 @@ export default function MagicOAuthCallbackPage() {
           return;
         }
 
-        await clearMagicPkceNative();
+        await clearMagicPkceServer(state);
         await loginAndHydrate(verified.data.user);
         markMagicMomentPending();
         router.replace(getPostLoginPath());
