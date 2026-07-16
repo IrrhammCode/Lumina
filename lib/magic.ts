@@ -1,7 +1,7 @@
 "use client";
 
 import { Magic } from "magic-sdk";
-import { OAuthExtension } from "@magic-ext/oauth2";
+import { OAuthExtension, type OAuthRedirectResult } from "@magic-ext/oauth2";
 import { Capacitor } from "@capacitor/core";
 import { getChainConfig } from "./chain-config";
 
@@ -78,16 +78,7 @@ export function getMagicOAuthRedirectUri(): string {
   return `${window.location.origin}/login/oauth`;
 }
 
-function sessionFromOAuthResult(result: {
-  magic: {
-    idToken: string;
-    userMetadata: {
-      email?: string | null;
-      wallets?: { ethereum?: { publicAddress?: string } };
-    };
-  };
-  oauth: { provider: string };
-}): MagicOAuthSession {
+function sessionFromOAuthResult(result: OAuthRedirectResult): MagicOAuthSession {
   const meta = result.magic.userMetadata;
   return {
     didToken: result.magic.idToken,
