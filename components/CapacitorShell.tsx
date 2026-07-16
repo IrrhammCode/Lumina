@@ -10,8 +10,18 @@ export default function CapacitorShell() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
+    document.documentElement.classList.add("is-native-app");
+    document.body.classList.add("is-native-app");
+
+    // Block pinch gestures that can expose WebView edges on iOS.
+    const lockOverscroll = (event: TouchEvent) => {
+      if (event.touches.length > 1) event.preventDefault();
+    };
+    document.addEventListener("touchmove", lockOverscroll, { passive: false });
+
     void (async () => {
       try {
+        await StatusBar.setOverlaysWebView({ overlay: true });
         await StatusBar.setStyle({ style: Style.Dark });
         if (Capacitor.getPlatform() === "android") {
           await StatusBar.setBackgroundColor({ color: "#E8EBE6" });
@@ -40,6 +50,9 @@ export default function CapacitorShell() {
     });
 
     return () => {
+      document.documentElement.classList.remove("is-native-app");
+      document.body.classList.remove("is-native-app");
+      document.removeEventListener("touchmove", lockOverscroll);
       void sub.then((handle) => handle.remove());
     };
   }, []);

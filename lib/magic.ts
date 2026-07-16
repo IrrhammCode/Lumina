@@ -128,7 +128,7 @@ export async function handleMagicOAuthRedirect(): Promise<{
     };
   } catch (error) {
     console.error("Magic OAuth redirect error:", error);
-    return null;
+    throw error instanceof Error ? error : new Error(String(error ?? "OAuth failed"));
   }
 }
 

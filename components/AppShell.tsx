@@ -21,7 +21,7 @@ export default function AppShell({
   compactHero = false,
 }: AppShellProps) {
   return (
-    <div className={`page-canvas ${className}`}>
+    <div className={`page-canvas overflow-x-clip ${className}`}>
       {hero && (
         <div className={`hero-zone ${compactHero ? "hero-zone-compact" : ""}`}>
           {hero}

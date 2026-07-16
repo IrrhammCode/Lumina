@@ -11,8 +11,8 @@ export const tweenBase: Transition = { duration: 0.32, ease: EASE_LUMINA };
 export const tweenSlow: Transition = { duration: 0.45, ease: EASE_LUMINA };
 
 export const pageEnter: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { ...tweenBase, staggerChildren: 0.06, delayChildren: 0.04 } },
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0, transition: { ...tweenBase, staggerChildren: 0.05, delayChildren: 0.02 } },
 };
 
 export const pageItem: Variants = {

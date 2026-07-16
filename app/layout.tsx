@@ -44,8 +44,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="font-sans min-h-dvh bg-canvas-soft text-ink antialiased">
+    <html lang="en" className={`${inter.variable} h-full overflow-x-hidden`}>
+      <body className="font-sans min-h-dvh overflow-x-hidden bg-canvas-soft text-ink antialiased">
         <CapacitorShell />
         <MagicWalletProvider>
           <ParticleProvider>{children}</ParticleProvider>

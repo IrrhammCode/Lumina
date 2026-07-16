@@ -14,8 +14,13 @@ export function formatMagicAuthError(error: unknown): string {
     return "This API key is not an Embedded Wallet (Auth) app. Create an Embedded Wallet app in Magic Dashboard and use its publishable key.";
   }
 
-  if (/allowlist|unauthorized domain|blocked/i.test(raw)) {
-    return `Domain not allowlisted. Add "${typeof window !== "undefined" ? window.location.host : "your-domain"}" in Magic Dashboard → Allowed Origins.`;
+  if (/allowlist|unauthorized domain|blocked|redirect/i.test(raw)) {
+    const host = typeof window !== "undefined" ? window.location.host : "your-domain";
+    return `Domain/redirect not allowlisted. Add "${host}" and "https://${host}/login/oauth" in Magic Dashboard → Allowed Origins & Redirects.`;
+  }
+
+  if (/cancelled|closed-by-user|user closed/i.test(raw)) {
+    return "Sign-in was cancelled. If this keeps happening in the iOS app, rebuild after updating Capacitor allowNavigation so Google/Apple stay in-app.";
   }
 
   return raw;

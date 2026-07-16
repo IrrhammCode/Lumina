@@ -9,6 +9,7 @@ import { loginAndHydrate } from "@/lib/sync";
 import { getPostLoginPath } from "@/lib/auth";
 import { auth } from "@/lib/copy";
 import { markMagicMomentPending } from "@/lib/magic-moment";
+import { formatMagicAuthError } from "@/lib/magic-errors";
 
 export default function MagicOAuthCallbackPage() {
   const router = useRouter();
@@ -16,28 +17,36 @@ export default function MagicOAuthCallbackPage() {
 
   useEffect(() => {
     void (async () => {
-      const result = await handleMagicOAuthRedirect();
-      if (!result?.didToken) {
-        setError("Sign-in was cancelled or failed");
-        return;
-      }
+      try {
+        const result = await handleMagicOAuthRedirect();
+        if (!result?.didToken) {
+          setError(
+            "Sign-in failed after redirect. In Magic Dashboard add redirect " +
+              `${window.location.origin}/login/oauth` +
+              " (Allowed Origins & Redirects). For iOS app, rebuild so Google/Apple stay in-app."
+          );
+          return;
+        }
 
-      const verified = await api.magicVerify(result.didToken);
-      if (!verified.ok) {
-        setError(verified.error);
-        return;
-      }
+        const verified = await api.magicVerify(result.didToken);
+        if (!verified.ok) {
+          setError(verified.error);
+          return;
+        }
 
-      await loginAndHydrate(verified.data.user);
-      markMagicMomentPending();
-      router.replace(getPostLoginPath());
+        await loginAndHydrate(verified.data.user);
+        markMagicMomentPending();
+        router.replace(getPostLoginPath());
+      } catch (err) {
+        setError(formatMagicAuthError(err));
+      }
     })();
   }, [router]);
 
   if (error) {
     return (
       <div className="page-canvas page-loading flex-col gap-4 px-6 text-center">
-        <p className="text-negative text-sm">{error}</p>
+        <p className="text-negative text-sm max-w-sm">{error}</p>
         <button type="button" onClick={() => router.replace("/login")} className="btn-secondary">
           {auth.walletBootRetry}
         </button>

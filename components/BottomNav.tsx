@@ -48,9 +48,9 @@ export default function BottomNav() {
 
   return (
     <motion.nav
-      initial={{ y: 32, opacity: 0 }}
+      initial={{ y: 16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ ...springSnappy, delay: 0.1 }}
+      transition={{ ...springSnappy, delay: 0.08 }}
       className="bottom-nav bottom-nav-safe"
       aria-label="Main"
     >

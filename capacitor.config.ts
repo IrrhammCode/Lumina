@@ -22,7 +22,8 @@ const config: CapacitorConfig = {
   webDir: "capacitor-www",
   backgroundColor: "#E8EBE6",
   ios: {
-    contentInset: "automatic",
+    // CSS owns safe-areas (viewport-fit=cover). Avoid double-insets with body/hero padding.
+    contentInset: "never",
     scheme: "Lumina",
     limitsNavigationsToAppBoundDomains: false,
   },
@@ -46,10 +47,18 @@ if (serverUrl) {
   config.server = {
     url: serverUrl,
     cleartext: serverUrl.startsWith("http://"),
+    // Keep OAuth inside the WKWebView. If Google/Apple open in Safari,
+    // Magic PKCE state is lost and /login/oauth shows "cancelled or failed".
     allowNavigation: [
       "*.magic.link",
       "*.auth.magic.link",
       "magic.link",
+      "auth.magic.link",
+      "accounts.google.com",
+      "*.google.com",
+      "*.googleusercontent.com",
+      "appleid.apple.com",
+      "*.apple.com",
       "arbiscan.io",
       "*.arbiscan.io",
       "bridge.arbitrum.io",
@@ -57,6 +66,7 @@ if (serverUrl) {
       "*.alchemy.com",
       "vercel.app",
       "*.vercel.app",
+      "lumina-kappa-blue.vercel.app",
     ],
   };
 }
